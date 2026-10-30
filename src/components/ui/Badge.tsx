@@ -15,23 +15,23 @@ export const Badge: React.FC<BadgeProps> = ({
   className = '',
 }) => {
   const sizeStyles = {
-    sm: 'text-[11px] px-2 py-0.5',
-    md: 'text-xs px-2.5 py-1',
+    sm: 'text-[11px] px-2.5 py-0.5',
+    md: 'text-xs px-3 py-1',
   };
 
   const variantStyles = {
-    default: 'bg-slate-100 text-slate-700 border-slate-200',
-    success: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-medium',
-    warning: 'bg-amber-50 text-amber-700 border-amber-200 font-medium',
-    danger: 'bg-rose-50 text-rose-700 border-rose-200 font-medium',
-    info: 'bg-sky-50 text-sky-700 border-sky-200 font-medium',
-    purple: 'bg-purple-50 text-purple-700 border-purple-200 font-medium',
-    outline: 'border border-slate-200 text-slate-600 bg-transparent',
+    default: 'bg-[#211A2D] text-[#AAA2B8] border-[#30263E]',
+    success: 'bg-[#4ADEA8]/10 text-[#4ADEA8] border-[#4ADEA8]/30 font-medium',
+    warning: 'bg-[#FBBF74]/10 text-[#FBBF74] border-[#FBBF74]/30 font-medium',
+    danger: 'bg-[#FB7185]/10 text-[#FB7185] border-[#FB7185]/30 font-medium',
+    info: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30 font-medium',
+    purple: 'bg-violet-500/15 text-[#C4B5FD] border-violet-500/30 font-medium',
+    outline: 'border border-[#30263E] text-[#AAA2B8] bg-transparent',
   };
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}
     >
       {children}
     </span>
@@ -40,30 +40,63 @@ export const Badge: React.FC<BadgeProps> = ({
 
 export const RoleBadge: React.FC<{ role: UserRole }> = ({ role }) => {
   if (role === 'admin') {
-    return <Badge variant="purple" size="sm">Administrator</Badge>;
+    return (
+      <Badge variant="purple" size="sm" className="shadow-xs">
+        <span className="w-1.5 h-1.5 rounded-full bg-violet-400"></span>
+        Administrator
+      </Badge>
+    );
   }
   if (role === 'mentor') {
-    return <Badge variant="info" size="sm">Mentor</Badge>;
+    return (
+      <Badge variant="info" size="sm" className="shadow-xs">
+        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+        Mentor
+      </Badge>
+    );
   }
-  return <Badge variant="default" size="sm">Mentee</Badge>;
+  return (
+    <Badge variant="default" size="sm" className="shadow-xs">
+      <span className="w-1.5 h-1.5 rounded-full bg-[#AAA2B8]"></span>
+      Mentee
+    </Badge>
+  );
 };
 
 export const VerificationBadge: React.FC<{ status: VerificationStatus }> = ({ status }) => {
   if (status === 'verified') {
-    return <Badge variant="success" size="sm">Verified</Badge>;
+    return (
+      <Badge variant="success" size="sm">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#4ADEA8]"></span>
+        Verified
+      </Badge>
+    );
   }
   if (status === 'rejected') {
-    return <Badge variant="danger" size="sm">Rejected</Badge>;
+    return (
+      <Badge variant="danger" size="sm">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#FB7185]"></span>
+        Rejected
+      </Badge>
+    );
   }
-  return <Badge variant="warning" size="sm">Pending Verification</Badge>;
+  return (
+    <Badge variant="warning" size="sm">
+      <span className="w-1.5 h-1.5 rounded-full bg-[#FBBF74]"></span>
+      Pending Verification
+    </Badge>
+  );
 };
 
 export const ResultBadge: React.FC<{ status: ResultStatus }> = ({ status }) => {
   if (status === 'PASS') {
-    return <Badge variant="success" size="sm">PASS</Badge>;
+    return <Badge variant="success" size="sm">Pass</Badge>;
   }
   if (status === 'FAIL') {
-    return <Badge variant="danger" size="sm">FAIL</Badge>;
+    return <Badge variant="danger" size="sm">Fail</Badge>;
   }
-  return <Badge variant="warning" size="sm">PENDING</Badge>;
+  if (status === 'WITHHELD') {
+    return <Badge variant="warning" size="sm">Withheld</Badge>;
+  }
+  return <Badge variant="default" size="sm">Pending</Badge>;
 };

@@ -46,7 +46,7 @@ export const INITIAL_PROFILES: UserProfile[] = [
     college: 'NMAM Institute of Technology (NMAMIT), Nitte',
     department: 'Computer Science & Engineering',
     branch: 'B.Tech - CSE',
-    usn: null, // Admin or mentee enters real USN
+    usn: 'NNM23IS148',
     semester: 5,
     mentor_id: INITIAL_MENTOR_ID,
     is_active: true,
@@ -327,3 +327,4 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
     created_at: '2026-10-25T11:00:00Z',
   },
 ];
+

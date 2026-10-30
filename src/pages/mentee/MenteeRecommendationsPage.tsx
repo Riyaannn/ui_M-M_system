@@ -7,6 +7,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Ca
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { Recommendation } from '../../types';
 import { 
   BookMarked, 
@@ -52,204 +54,108 @@ export const MenteeRecommendationsPage: React.FC = () => {
   const unreadCount = recommendations.filter(r => !r.is_viewed).length;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <BookMarked className="w-6 h-6 text-nmam-teal-600" />
-            Recommended Notes & Learning Resources
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Study materials and syllabus guidelines assigned by your mentor ({unreadCount} unread)
-          </p>
-        </div>
-      </div>
+    <div className="space-y-6 animate-fade-in">
+      <PageHeader
+        title="Recommended Study Notes &amp; Resources"
+        subtitle="Subject materials, reference URLs, and syllabus guides curated by your faculty mentor"
+        badge={
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#191521] border border-[#30263E] text-[11px] text-[#AAA2B8]">
+            <BookMarked className="w-3.5 h-3.5 text-violet-400" />
+            <span>Academic Resource Library &bull; {unreadCount} New Items</span>
+          </div>
+        }
+      />
 
-      {/* Grid of Recommendation Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      {/* Recommendations Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {recommendations.length === 0 ? (
-          <div className="col-span-full py-12 text-center text-slate-400 bg-white rounded-xl border border-dashed border-slate-200">
-            No study recommendations assigned yet by your mentor.
+          <div className="col-span-full">
+            <EmptyState
+              icon={<BookMarked className="w-8 h-8 text-violet-400" />}
+              title="No Study Notes Assigned Yet"
+              description="Your mentor hasn't assigned any study materials yet. Check back following your next mentoring session."
+            />
           </div>
         ) : (
           recommendations.map((rec) => (
-            <Card key={rec.id} className="flex flex-col justify-between overflow-hidden">
+            <Card
+              key={rec.id}
+              className={`overflow-hidden flex flex-col justify-between transition-all duration-200 ${
+                !rec.is_viewed
+                  ? 'border-violet-500/40 shadow-glow-violet-sm'
+                  : 'hover:border-[#30263E]/80'
+              }`}
+            >
               <div>
-                <CardHeader className="bg-slate-50/50 pb-3">
-                  <div className="flex items-start justify-between w-full">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-nmam-teal-700 bg-nmam-teal-50 px-2 py-0.5 rounded border border-nmam-teal-100">
-                        {rec.subject}
-                      </span>
-                      <h3 className="font-bold text-sm text-slate-900 mt-1.5">{rec.title}</h3>
-                    </div>
-
+                <CardHeader className="bg-[#12101A]/60 pb-3 border-b border-[#30263E]/60">
+                  <div className="flex items-start justify-between w-full gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-violet-300 bg-violet-500/15 border border-violet-500/30 px-2 py-0.5 rounded-md">
+                      {rec.subject}
+                    </span>
                     {rec.is_viewed ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Reviewed
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#4ADEA8] bg-[#4ADEA8]/10 border border-[#4ADEA8]/30 px-2 py-0.5 rounded-full">
+                        <CheckCircle2 className="w-3 h-3" /> Read
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                        <Clock className="w-3.5 h-3.5" /> New / Unread
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#FBBF74] bg-[#FBBF74]/10 border border-[#FBBF74]/30 px-2 py-0.5 rounded-full">
+                        <Clock className="w-3 h-3" /> New
                       </span>
                     )}
                   </div>
                 </CardHeader>
 
                 <CardContent className="space-y-3 pt-4 text-xs">
-                  <p className="text-slate-600 leading-relaxed line-clamp-3">
-                    {rec.description}
-                  </p>
+                  <div>
+                    <h3 className="font-bold text-sm text-[#F5F3FA] leading-snug">
+                      {rec.title}
+                    </h3>
+                    <p className="text-[#AAA2B8] text-xs mt-1.5 leading-relaxed">
+                      {rec.description}
+                    </p>
+                  </div>
 
-                  <div className="pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-[11px] text-slate-500">
+                  <div className="pt-2 border-t border-[#30263E]/60 space-y-1 text-[11px] text-[#777084]">
                     <div>
-                      <span className="font-medium text-slate-400 block">Recommended By:</span>
-                      <span className="font-semibold text-slate-800">
-                        {rec.mentor?.full_name || 'Faculty Mentor'}
-                      </span>
+                      Assigned by: <strong className="text-[#F5F3FA]">{rec.mentor?.full_name || 'Faculty Mentor'}</strong>
                     </div>
-
                     <div>
-                      <span className="font-medium text-slate-400 block">Assigned Date:</span>
-                      <span>{new Date(rec.created_at).toLocaleDateString()}</span>
-                    </div>
-
-                    <div>
-                      <span className="font-medium text-slate-400 block">Target Follow-Up:</span>
-                      <span className="font-medium text-slate-700">
-                        {rec.follow_up_date || 'None scheduled'}
-                      </span>
-                    </div>
-
-                    <div>
-                      <span className="font-medium text-slate-400 block">Status:</span>
-                      <span>
-                        {rec.is_viewed
-                          ? `Read on ${new Date(rec.viewed_at!).toLocaleDateString()}`
-                          : 'Pending your review'}
-                      </span>
+                      Date: {new Date(rec.created_at).toLocaleDateString()}
                     </div>
                   </div>
                 </CardContent>
               </div>
 
-              <div className="p-3 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs py-1"
-                  onClick={() => setSelectedRec(rec)}
-                >
-                  View Details
-                </Button>
-
-                <div className="flex items-center gap-2">
+              <div className="p-4 bg-[#12101A]/60 border-t border-[#30263E]/60 flex items-center justify-between gap-2 text-xs">
+                <div>
                   {rec.resource_url && (
                     <a
                       href={rec.resource_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={() => {
-                        if (!rec.is_viewed) handleMarkAsRead(rec);
-                      }}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-300 hover:text-violet-200"
                     >
-                      <Button size="sm" variant="teal" className="text-xs py-1" leftIcon={<ExternalLink className="w-3.5 h-3.5" />}>
-                        Open Resource
-                      </Button>
+                      <ExternalLink className="w-3.5 h-3.5" /> Open Resource
                     </a>
                   )}
-
-                  {!rec.is_viewed && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="text-xs py-1"
-                      leftIcon={<CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
-                      onClick={() => handleMarkAsRead(rec)}
-                    >
-                      Mark as Read
-                    </Button>
-                  )}
                 </div>
+
+                {!rec.is_viewed ? (
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    className="text-xs py-1 px-3"
+                    onClick={() => handleMarkAsRead(rec)}
+                  >
+                    Mark as Read
+                  </Button>
+                ) : (
+                  <span className="text-[10px] text-[#777084] font-mono">Reviewed</span>
+                )}
               </div>
             </Card>
           ))
         )}
       </div>
-
-      {/* Details Modal */}
-      {selectedRec && (
-        <Modal
-          isOpen={Boolean(selectedRec)}
-          onClose={() => setSelectedRec(null)}
-          title={selectedRec.title}
-          description={`Subject: ${selectedRec.subject}`}
-          maxWidth="md"
-        >
-          <div className="space-y-4 text-xs">
-            <div>
-              <span className="font-semibold text-slate-400 uppercase tracking-wider text-[10px] block">
-                Guidance & Notes from Mentor
-              </span>
-              <p className="text-sm text-slate-800 leading-relaxed mt-1 whitespace-pre-wrap bg-slate-50 p-3 rounded-lg border border-slate-100">
-                {selectedRec.description}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-slate-600 border-t border-slate-100 pt-3">
-              <div>
-                <span className="font-semibold text-slate-400 block">Mentor:</span>
-                <span className="font-semibold text-slate-800">
-                  {selectedRec.mentor?.full_name || 'Faculty Mentor'}
-                </span>
-              </div>
-              <div>
-                <span className="font-semibold text-slate-400 block">Follow-Up Target:</span>
-                <span>{selectedRec.follow_up_date || 'Self-paced'}</span>
-              </div>
-            </div>
-
-            {selectedRec.resource_url && (
-              <div className="pt-2">
-                <a
-                  href={selectedRec.resource_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-nmam-navy-900 hover:bg-nmam-navy-800 text-white rounded-lg font-semibold transition"
-                  onClick={() => {
-                    if (!selectedRec.is_viewed) handleMarkAsRead(selectedRec);
-                  }}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Access Full Study Resource URL
-                </a>
-              </div>
-            )}
-
-            <div className="flex justify-between items-center pt-3 border-t border-slate-100">
-              <div>
-                {selectedRec.is_viewed ? (
-                  <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                    <CheckCircle2 className="w-4 h-4" /> Marked as Read
-                  </span>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleMarkAsRead(selectedRec)}
-                  >
-                    Mark as Read
-                  </Button>
-                )}
-              </div>
-              <Button size="sm" variant="ghost" onClick={() => setSelectedRec(null)}>
-                Close
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 };

@@ -16,32 +16,34 @@ export const UnauthorizedPage: React.FC = () => {
     : '/mentee/dashboard';
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center">
-        <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-4 border border-rose-100">
+    <div className="min-h-screen bg-[#0D0B12] text-[#F5F3FA] flex items-center justify-center p-4 relative mm-grid-pattern">
+      <div className="max-w-md w-full bg-[#191521] rounded-2xl border border-[#30263E] p-8 shadow-2xl text-center relative z-10">
+        <div className="w-16 h-16 rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center mx-auto mb-4">
           <ShieldAlert className="w-8 h-8" />
         </div>
 
-        <h1 className="text-xl font-bold text-slate-900 tracking-tight">Access Restricted</h1>
-        <p className="text-xs font-semibold text-rose-600 uppercase tracking-wider mt-1">403 Forbidden</p>
+        <h1 className="text-xl font-bold text-[#F5F3FA] tracking-tight">Access Restricted</h1>
+        <p className="text-xs font-semibold text-rose-400 uppercase tracking-wider mt-1">403 Forbidden</p>
 
-        <p className="text-sm text-slate-600 mt-3 leading-relaxed">
-          You do not possess the required privileges to view <span className="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-800">{attemptedPath}</span>.
+        <p className="text-sm text-[#AAA2B8] mt-3 leading-relaxed">
+          You do not possess the required privileges to view <span className="font-mono text-xs bg-[#12101A] px-2 py-0.5 rounded-lg border border-[#30263E] text-violet-300">{attemptedPath}</span>.
         </p>
 
-        <p className="text-xs text-slate-400 mt-2">
-          Logged in as: <strong className="text-slate-700">{profile?.full_name}</strong> ({profile?.role})
-        </p>
+        {profile && (
+          <p className="text-xs text-[#777084] mt-2">
+            Active identity: <strong className="text-[#F5F3FA]">{profile.full_name}</strong> ({profile.role})
+          </p>
+        )}
 
-        <div className="mt-6 flex flex-col sm:flex-row gap-2 justify-center">
+        <div className="mt-6 flex flex-col sm:flex-row gap-2.5 justify-center">
           <Link to={defaultHome}>
             <Button variant="primary" size="sm" leftIcon={<Home className="w-4 h-4" />}>
-              Return to Your Dashboard
+              Your Workspace
             </Button>
           </Link>
           <Link to="/login">
-            <Button variant="outline" size="sm" leftIcon={<ArrowLeft className="w-4 h-4" />}>
-              Switch Account
+            <Button variant="secondary" size="sm" leftIcon={<ArrowLeft className="w-4 h-4" />}>
+              Switch Portal
             </Button>
           </Link>
         </div>

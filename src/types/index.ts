@@ -18,6 +18,10 @@ export interface UserProfile {
   mentor?: UserProfile | null;
 }
 
+export type AdminProfile = UserProfile & { role: 'admin' };
+export type MentorProfile = UserProfile & { role: 'mentor' };
+export type MenteeProfile = UserProfile & { role: 'mentee' };
+
 export interface AccessSettings {
   id: string;
   mentee_id: string;
@@ -120,3 +124,14 @@ export interface SemesterSummary {
   sgpa?: number | null;
   status: 'PENDING' | 'PASS' | 'FAIL';
 }
+
+export interface ServiceResult<T> {
+  data: T | null;
+  error: string | null;
+  success: boolean;
+}
+
+export type AuthState =
+  | { status: 'loading'; user: null; profile: null; role: null }
+  | { status: 'unauthenticated'; user: null; profile: null; role: null }
+  | { status: 'authenticated'; user: { id: string; email: string }; profile: UserProfile; role: UserRole };

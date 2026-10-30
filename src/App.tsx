@@ -2,16 +2,23 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
-import { ProtectedRoute } from './routes/ProtectedRoute';
-import { DashboardLayout } from './components/layout/DashboardLayout';
+import { RoleGuard } from './routes/RoleGuard';
 
-// Public pages
-import { LoginPage } from './pages/auth/LoginPage';
+// Layouts
+import { AdminLayout } from './components/layout/AdminLayout';
+import { MentorLayout } from './components/layout/MentorLayout';
+import { MenteeLayout } from './components/layout/MenteeLayout';
+
+// Public & Authentication Pages
+import { PortalSelectionPage } from './pages/auth/PortalSelectionPage';
+import { AdminLoginPage } from './pages/auth/AdminLoginPage';
+import { MentorLoginPage } from './pages/auth/MentorLoginPage';
+import { MenteeLoginPage } from './pages/auth/MenteeLoginPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { UnauthorizedPage } from './pages/auth/UnauthorizedPage';
 import { NotFoundPage } from './pages/auth/NotFoundPage';
 
-// Admin pages
+// Admin Pages
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { AdminMentorsPage } from './pages/admin/AdminMentorsPage';
 import { AdminMenteesPage } from './pages/admin/AdminMenteesPage';
@@ -21,21 +28,21 @@ import { AdminVerificationsPage } from './pages/admin/AdminVerificationsPage';
 import { AdminPermissionsPage } from './pages/admin/AdminPermissionsPage';
 import { AdminAuditLogsPage } from './pages/admin/AdminAuditLogsPage';
 
-// Mentor pages
+// Mentor Pages
 import { MentorDashboardPage } from './pages/mentor/MentorDashboardPage';
 import { MentorMenteesPage } from './pages/mentor/MentorMenteesPage';
 import { MentorMenteeDetailPage } from './pages/mentor/MentorMenteeDetailPage';
 import { MentorRecommendationsPage } from './pages/mentor/MentorRecommendationsPage';
 import { MentorNotesPage } from './pages/mentor/MentorNotesPage';
 
-// Mentee pages
+// Mentee Pages
 import { MenteeDashboardPage } from './pages/mentee/MenteeDashboardPage';
 import { MenteeProfilePage } from './pages/mentee/MenteeProfilePage';
 import { MenteeAcademicRecordsPage } from './pages/mentee/MenteeAcademicRecordsPage';
 import { MenteeMentorPage } from './pages/mentee/MenteeMentorPage';
 import { MenteeRecommendationsPage } from './pages/mentee/MenteeRecommendationsPage';
 
-// Root redirect based on role
+// Smart Root Redirect based on authenticated role
 const RootRedirect: React.FC = () => {
   const { profile, loading } = useAuth();
   if (loading) return null;
@@ -52,21 +59,25 @@ export const App: React.FC = () => {
       <ToastProvider>
         <AuthProvider>
           <Routes>
-            {/* Public routes */}
+            {/* Entry & Public Routes */}
             <Route path="/" element={<RootRedirect />} />
-            <Route path="/login" element={<LoginPage />} />
+            <Route path="/login" element={<PortalSelectionPage />} />
+            <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route path="/mentor/login" element={<MentorLoginPage />} />
+            <Route path="/mentee/login" element={<MenteeLoginPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-            {/* Admin protected routes */}
+            {/* Administrator Protected Routes */}
             <Route
               path="/admin"
               element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <DashboardLayout />
-                </ProtectedRoute>
+                <RoleGuard allowedRoles={['admin']}>
+                  <AdminLayout />
+                </RoleGuard>
               }
             >
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboardPage />} />
               <Route path="mentors" element={<AdminMentorsPage />} />
               <Route path="mentees" element={<AdminMenteesPage />} />
@@ -77,15 +88,16 @@ export const App: React.FC = () => {
               <Route path="audit-logs" element={<AdminAuditLogsPage />} />
             </Route>
 
-            {/* Mentor protected routes */}
+            {/* Mentor Protected Routes */}
             <Route
               path="/mentor"
               element={
-                <ProtectedRoute allowedRoles={['mentor']}>
-                  <DashboardLayout />
-                </ProtectedRoute>
+                <RoleGuard allowedRoles={['mentor']}>
+                  <MentorLayout />
+                </RoleGuard>
               }
             >
+              <Route index element={<Navigate to="/mentor/dashboard" replace />} />
               <Route path="dashboard" element={<MentorDashboardPage />} />
               <Route path="mentees" element={<MentorMenteesPage />} />
               <Route path="mentees/:id" element={<MentorMenteeDetailPage />} />
@@ -93,15 +105,16 @@ export const App: React.FC = () => {
               <Route path="notes" element={<MentorNotesPage />} />
             </Route>
 
-            {/* Mentee protected routes */}
+            {/* Mentee Protected Routes */}
             <Route
               path="/mentee"
               element={
-                <ProtectedRoute allowedRoles={['mentee']}>
-                  <DashboardLayout />
-                </ProtectedRoute>
+                <RoleGuard allowedRoles={['mentee']}>
+                  <MenteeLayout />
+                </RoleGuard>
               }
             >
+              <Route index element={<Navigate to="/mentee/dashboard" replace />} />
               <Route path="dashboard" element={<MenteeDashboardPage />} />
               <Route path="profile" element={<MenteeProfilePage />} />
               <Route path="academic-records" element={<MenteeAcademicRecordsPage />} />
@@ -109,7 +122,7 @@ export const App: React.FC = () => {
               <Route path="recommendations" element={<MenteeRecommendationsPage />} />
             </Route>
 
-            {/* 404 Catch-all */}
+            {/* 404 Catch-All */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </AuthProvider>

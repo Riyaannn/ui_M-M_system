@@ -114,3 +114,4 @@ describe('Security and Row Level Policy Enforcement Tests', () => {
     expect(settings.allow_profile_edit).toBe(false);
   });
 });
+

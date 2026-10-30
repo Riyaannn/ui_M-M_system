@@ -133,3 +133,4 @@ export const profileService = {
     return this.updateProfile(userId, { is_active: isActive }, actorId);
   },
 };
+

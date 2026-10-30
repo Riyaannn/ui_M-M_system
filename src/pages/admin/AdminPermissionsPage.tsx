@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { ProfileAvatar } from '../../components/ui/ProfileAvatar';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { dbStore } from '../../services/dbStore';
@@ -53,118 +55,130 @@ export const AdminPermissionsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-          <ShieldAlert className="w-6 h-6 text-purple-600" />
-          Access Control & Privacy Governance
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1">
-          Administer granular visibility and editing policies enforced by backend database rules
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-        <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-1">
-          <div className="font-semibold text-slate-900 flex items-center gap-1.5">
-            <Unlock className="w-4 h-4 text-emerald-600" />
-            Profile Editing
+    <div className="space-y-6 animate-fade-in">
+      <PageHeader
+        title="Privacy & Access Control Matrix"
+        subtitle="Manage student self-editing rights, mentor academic view rights, and contact disclosure"
+        badge={
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#191521] border border-[#30263E] text-[11px] text-[#AAA2B8]">
+            <ShieldAlert className="w-3.5 h-3.5 text-violet-400" />
+            <span>Institutional Governance Matrix</span>
           </div>
-          <p className="text-slate-500 text-[11px]">
-            When disabled, mentees cannot modify their USN, semester, or personal contact info.
-          </p>
-        </div>
-
-        <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-1">
-          <div className="font-semibold text-slate-900 flex items-center gap-1.5">
-            <Eye className="w-4 h-4 text-sky-600" />
-            Academic Record Visibility
-          </div>
-          <p className="text-slate-500 text-[11px]">
-            Controls whether the assigned faculty mentor is permitted to inspect semester examination marks.
-          </p>
-        </div>
-
-        <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-1">
-          <div className="font-semibold text-slate-900 flex items-center gap-1.5">
-            <UserCheck className="w-4 h-4 text-purple-600" />
-            Contact Info Disclosure
-          </div>
-          <p className="text-slate-500 text-[11px]">
-            Protects student phone numbers and direct contact links from unauthorized visibility.
-          </p>
-        </div>
-      </div>
+        }
+      />
 
       <Card>
         <CardHeader>
-          <CardTitle>Mentee Privacy Configuration Matrix</CardTitle>
+          <div>
+            <CardTitle>Per-Student Access Rights</CardTitle>
+            <p className="text-xs text-[#AAA2B8] mt-0.5">
+              Administrators hold sovereign authority to restrict or enable field-level student and mentor access.
+            </p>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full text-left text-xs">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase tracking-wider font-semibold">
-                  <th className="py-3 px-4">Student Name</th>
+                <tr className="border-b border-[#30263E]/60 bg-[#12101A]/30 text-[#AAA2B8] uppercase tracking-wider font-semibold text-[10px]">
+                  <th className="py-3 px-4">Student Mentee</th>
                   <th className="py-3 px-4">Assigned Mentor</th>
-                  <th className="py-3 px-4 text-center">Allow Profile Edit</th>
-                  <th className="py-3 px-4 text-center">Allow Academic View</th>
-                  <th className="py-3 px-4 text-center">Allow Contact View</th>
-                  <th className="py-3 px-4 text-right">Settings Status</th>
+                  <th className="py-3 px-4 text-center">Student Profile Self-Edit</th>
+                  <th className="py-3 px-4 text-center">Mentor Academic View</th>
+                  <th className="py-3 px-4 text-center">Contact Details View</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {mentees.map((m) => {
-                  const s = settingsMap[m.id];
+              <tbody className="divide-y divide-[#30263E]/40">
+                {mentees.map((mentee) => {
+                  const s = settingsMap[mentee.id];
+
                   return (
-                    <tr key={m.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="py-3 px-4 font-semibold text-slate-900">
-                        {m.full_name}
-                        <span className="block text-[10px] text-slate-400 font-mono">{m.email}</span>
+                    <tr key={mentee.id} className="hover:bg-[#211A2D]/50 transition-colors">
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2.5">
+                          <ProfileAvatar name={mentee.full_name} size="sm" />
+                          <div>
+                            <span className="font-semibold text-[#F5F3FA] block">{mentee.full_name}</span>
+                            <span className="text-[10px] text-[#777084]">{mentee.email}</span>
+                          </div>
+                        </div>
                       </td>
-                      <td className="py-3 px-4 text-slate-700">
-                        {m.mentor?.full_name || (
-                          <span className="text-amber-600 italic">Unassigned</span>
+                      <td className="py-3.5 px-4 text-[#AAA2B8]">
+                        {mentee.mentor?.full_name || (
+                          <span className="text-[#777084] italic">Unassigned</span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-center">
-                        <button
-                          onClick={() => handleToggle(m.id, 'allow_profile_edit')}
-                          className={`px-3 py-1 rounded-full text-[11px] font-semibold transition ${
+
+                      {/* Allow Profile Edit Toggle */}
+                      <td className="py-3.5 px-4 text-center">
+                        <Button
+                          size="sm"
+                          variant={s?.allow_profile_edit ? 'primary' : 'secondary'}
+                          className={`text-xs py-1 px-3 ${
                             s?.allow_profile_edit
-                              ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                              : 'bg-rose-100 text-rose-800 hover:bg-rose-200'
+                              ? ''
+                              : 'text-[#777084]'
                           }`}
+                          onClick={() => handleToggle(mentee.id, 'allow_profile_edit')}
                         >
-                          {s?.allow_profile_edit ? 'Enabled' : 'Restricted'}
-                        </button>
+                          {s?.allow_profile_edit ? (
+                            <span className="flex items-center gap-1.5">
+                              <Unlock className="w-3.5 h-3.5" /> Allowed
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1.5">
+                              <Lock className="w-3.5 h-3.5" /> Locked
+                            </span>
+                          )}
+                        </Button>
                       </td>
-                      <td className="py-3 px-4 text-center">
-                        <button
-                          onClick={() => handleToggle(m.id, 'allow_academic_view')}
-                          className={`px-3 py-1 rounded-full text-[11px] font-semibold transition ${
+
+                      {/* Allow Academic View Toggle */}
+                      <td className="py-3.5 px-4 text-center">
+                        <Button
+                          size="sm"
+                          variant={s?.allow_academic_view ? 'primary' : 'secondary'}
+                          className={`text-xs py-1 px-3 ${
                             s?.allow_academic_view
-                              ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                              : 'bg-rose-100 text-rose-800 hover:bg-rose-200'
+                              ? ''
+                              : 'text-[#777084]'
                           }`}
+                          onClick={() => handleToggle(mentee.id, 'allow_academic_view')}
                         >
-                          {s?.allow_academic_view ? 'Visible' : 'Hidden'}
-                        </button>
+                          {s?.allow_academic_view ? (
+                            <span className="flex items-center gap-1.5">
+                              <Eye className="w-3.5 h-3.5" /> Visible
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1.5">
+                              <EyeOff className="w-3.5 h-3.5" /> Hidden
+                            </span>
+                          )}
+                        </Button>
                       </td>
-                      <td className="py-3 px-4 text-center">
-                        <button
-                          onClick={() => handleToggle(m.id, 'allow_contact_view')}
-                          className={`px-3 py-1 rounded-full text-[11px] font-semibold transition ${
+
+                      {/* Allow Contact View Toggle */}
+                      <td className="py-3.5 px-4 text-center">
+                        <Button
+                          size="sm"
+                          variant={s?.allow_contact_view ? 'primary' : 'secondary'}
+                          className={`text-xs py-1 px-3 ${
                             s?.allow_contact_view
-                              ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                              : 'bg-rose-100 text-rose-800 hover:bg-rose-200'
+                              ? ''
+                              : 'text-[#777084]'
                           }`}
+                          onClick={() => handleToggle(mentee.id, 'allow_contact_view')}
                         >
-                          {s?.allow_contact_view ? 'Visible' : 'Hidden'}
-                        </button>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <Badge variant="default" size="sm">Active Policy</Badge>
+                          {s?.allow_contact_view ? (
+                            <span className="flex items-center gap-1.5">
+                              <Eye className="w-3.5 h-3.5" /> Disclosed
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1.5">
+                              <EyeOff className="w-3.5 h-3.5" /> Restricted
+                            </span>
+                          )}
+                        </Button>
                       </td>
                     </tr>
                   );

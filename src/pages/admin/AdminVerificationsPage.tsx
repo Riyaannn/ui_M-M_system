@@ -3,6 +3,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Ca
 import { Button } from '../../components/ui/Button';
 import { Badge, VerificationBadge, ResultBadge } from '../../components/ui/Badge';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { ProfileAvatar } from '../../components/ui/ProfileAvatar';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { dbStore } from '../../services/dbStore';
@@ -59,10 +61,9 @@ export const AdminVerificationsPage: React.FC = () => {
         'Record Verified'
       );
       setIsConfirmOpen(false);
-      setSelectedRecord(null);
       loadData();
     } catch (err: any) {
-      error(err.message || 'Failed to update record');
+      error(err.message || 'Verification update failed');
     }
   };
 
@@ -72,148 +73,130 @@ export const AdminVerificationsPage: React.FC = () => {
   });
 
   const pendingCount = records.filter(r => r.verification_status === 'pending').length;
+  const verifiedCount = records.filter(r => r.verification_status === 'verified').length;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <FileCheck2 className="w-6 h-6 text-nmam-teal-600" />
-            Academic Marks Verification & Publishing
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Enforce academic integrity by auditing and approving student examination submissions
-          </p>
+    <div className="space-y-6 animate-fade-in">
+      <PageHeader
+        title="Examination Marks Verification"
+        subtitle="Audit, verify, and permanently publish semester examination marks for NMAMIT students"
+        badge={
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#191521] border border-[#30263E] text-[11px] text-[#AAA2B8]">
+            <FileCheck2 className="w-3.5 h-3.5 text-violet-400" />
+            <span>Academic Integrity Console &bull; NMAMIT, Nitte</span>
+          </div>
+        }
+      />
+
+      {/* Filter Tabs */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-2 rounded-2xl bg-[#191521] border border-[#30263E]">
+        <div className="flex rounded-xl bg-[#12101A] p-0.5 border border-[#30263E]">
+          {(['pending', 'verified', 'rejected', 'all'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setFilter(tab)}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition capitalize ${
+                filter === tab
+                  ? 'bg-violet-600 text-white shadow-xs'
+                  : 'text-[#AAA2B8] hover:text-[#F5F3FA]'
+              }`}
+            >
+              {tab === 'pending' ? `Pending (${pendingCount})` : tab}
+            </button>
+          ))}
         </div>
 
-        {/* Status filters */}
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg text-xs">
-          <button
-            onClick={() => setFilter('pending')}
-            className={`px-3 py-1.5 rounded-md font-medium transition ${
-              filter === 'pending'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Pending ({pendingCount})
-          </button>
-          <button
-            onClick={() => setFilter('verified')}
-            className={`px-3 py-1.5 rounded-md font-medium transition ${
-              filter === 'verified'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Verified
-          </button>
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-3 py-1.5 rounded-md font-medium transition ${
-              filter === 'all'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            All
-          </button>
+        <div className="text-xs text-[#AAA2B8] px-2 flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+          <span>Verified scores are locked against student and mentor edits.</span>
         </div>
       </div>
 
-      {/* Info Card */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 text-xs text-amber-900">
-        <ShieldCheck className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
-        <div>
-          <span className="font-semibold">Academic Policy Guard:</span> Mentees can submit draft marks from semester examinations, but they remain strictly in pending state. Once verified by an administrator, the official marks are locked and cannot be modified by students or mentors.
-        </div>
-      </div>
-
-      {/* Records Table */}
+      {/* Verification Records Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Examination Records ({filteredRecords.length})</CardTitle>
-        </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full text-left text-xs">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase tracking-wider font-semibold">
-                  <th className="py-3 px-4">Student</th>
-                  <th className="py-3 px-4">Subject</th>
-                  <th className="py-3 px-4">Semester</th>
-                  <th className="py-3 px-4">Credits</th>
-                  <th className="py-3 px-4">Internal</th>
-                  <th className="py-3 px-4">External</th>
-                  <th className="py-3 px-4">Total / Max</th>
-                  <th className="py-3 px-4">Result</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Verification Action</th>
+                <tr className="border-b border-[#30263E]/60 bg-[#12101A]/30 text-[#AAA2B8] uppercase tracking-wider font-semibold text-[10px]">
+                  <th className="py-3.5 px-4">Student</th>
+                  <th className="py-3.5 px-4">Subject &amp; Code</th>
+                  <th className="py-3.5 px-4">Semester</th>
+                  <th className="py-3.5 px-4">CIE / SEE / Total</th>
+                  <th className="py-3.5 px-4">Credits</th>
+                  <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-4 text-right">Audit Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-[#30263E]/40">
                 {filteredRecords.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="py-8 text-center text-slate-400">
-                      No examination records found matching the {filter} filter.
+                    <td colSpan={7} className="py-12 text-center text-[#777084]">
+                      No academic records in "{filter}" status.
                     </td>
                   </tr>
                 ) : (
-                  filteredRecords.map((r) => (
-                    <tr key={r.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="py-3 px-4 font-semibold text-slate-900">
-                        {r.mentee?.full_name || 'Student'}
-                        <span className="block text-[10px] text-slate-400 font-mono">
-                          {r.mentee?.usn || r.mentee?.email}
-                        </span>
+                  filteredRecords.map((rec) => (
+                    <tr key={rec.id} className="hover:bg-[#211A2D]/50 transition-colors">
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2.5">
+                          <ProfileAvatar name={rec.mentee?.full_name || 'Student'} size="sm" />
+                          <div>
+                            <span className="font-semibold text-[#F5F3FA] block">
+                              {rec.mentee?.full_name || 'Mentee'}
+                            </span>
+                            <span className="text-[10px] text-[#777084] font-mono">
+                              {rec.mentee?.usn || rec.mentee?.email}
+                            </span>
+                          </div>
+                        </div>
                       </td>
-                      <td className="py-3 px-4 font-medium text-slate-800">
-                        {r.subject_name}
-                        <span className="block text-[10px] text-slate-400 font-mono">{r.subject_code}</span>
+                      <td className="py-3.5 px-4">
+                        <span className="font-mono text-violet-300 font-bold block">{rec.subject_code}</span>
+                        <span className="text-[11px] text-[#AAA2B8]">{rec.subject_name}</span>
                       </td>
-                      <td className="py-3 px-4 text-slate-600">Sem {r.semester}</td>
-                      <td className="py-3 px-4 font-mono text-slate-600">{r.credits}</td>
-                      <td className="py-3 px-4 font-mono text-slate-800">
-                        {r.internal_marks != null ? r.internal_marks : '-'}
+                      <td className="py-3.5 px-4 text-[#AAA2B8]">
+                        Sem {rec.semester} ({rec.academic_year})
                       </td>
-                      <td className="py-3 px-4 font-mono text-slate-800">
-                        {r.external_marks != null ? r.external_marks : '-'}
+                      <td className="py-3.5 px-4">
+                        <div className="font-semibold text-[#F5F3FA]">
+                          {rec.internal_marks != null && rec.external_marks != null ? (
+                            <span>
+                              {rec.internal_marks} + {rec.external_marks} = <strong className="text-violet-300">{rec.total_marks}</strong> / {rec.maximum_marks}
+                            </span>
+                          ) : (
+                            <span>{rec.total_marks || 'N/A'}</span>
+                          )}
+                        </div>
+                        {rec.result_status && <ResultBadge status={rec.result_status} />}
                       </td>
-                      <td className="py-3 px-4 font-mono font-bold text-slate-900">
-                        {r.total_marks != null ? r.total_marks : '-'} / {r.maximum_marks}
+                      <td className="py-3.5 px-4 font-mono text-[#AAA2B8]">{rec.credits} cr</td>
+                      <td className="py-3.5 px-4">
+                        <VerificationBadge status={rec.verification_status} />
                       </td>
-                      <td className="py-3 px-4">
-                        <ResultBadge status={r.result_status} />
-                      </td>
-                      <td className="py-3 px-4">
-                        <VerificationBadge status={r.verification_status} />
-                      </td>
-                      <td className="py-3 px-4 text-right space-x-1 whitespace-nowrap">
-                        {r.verification_status === 'pending' ? (
-                          <>
+                      <td className="py-3.5 px-4 text-right">
+                        {rec.verification_status === 'pending' ? (
+                          <div className="flex items-center justify-end gap-1.5">
                             <Button
                               size="sm"
-                              variant="teal"
-                              className="py-1 px-2.5 text-xs"
-                              leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
-                              onClick={() => handleActionClick(r, 'verified')}
+                              variant="primary"
+                              className="text-xs py-1 px-2.5"
+                              onClick={() => handleActionClick(rec, 'verified')}
                             >
-                              Verify & Publish
+                              Verify &amp; Publish
                             </Button>
                             <Button
                               size="sm"
                               variant="danger"
-                              className="py-1 px-2 text-xs"
-                              onClick={() => handleActionClick(r, 'rejected')}
-                              title="Reject record"
+                              className="text-xs py-1 px-2"
+                              onClick={() => handleActionClick(rec, 'rejected')}
                             >
-                              <XCircle className="w-3.5 h-3.5" />
+                              Reject
                             </Button>
-                          </>
+                          </div>
                         ) : (
-                          <span className="text-[11px] text-slate-400 italic">
-                            Action completed
+                          <span className="text-[10px] text-[#777084] font-mono">
+                            {rec.verification_status === 'verified' ? 'Published' : 'Rejected'}
                           </span>
                         )}
                       </td>
@@ -231,13 +214,13 @@ export const AdminVerificationsPage: React.FC = () => {
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={handleConfirmAction}
-        title={actionType === 'verified' ? 'Verify and Publish Academic Record' : 'Reject Academic Record'}
+        title={actionType === 'verified' ? 'Verify and Publish Marks' : 'Reject Draft Marks'}
         message={
           actionType === 'verified'
-            ? `Are you sure you want to officially verify and publish marks for ${selectedRecord?.subject_code} (${selectedRecord?.subject_name})? This will lock the record as authoritative.`
-            : `Are you sure you want to reject the submitted marks for ${selectedRecord?.subject_code}? The student will need to re-submit.`
+            ? `Confirm official verification of ${selectedRecord?.subject_code} (${selectedRecord?.subject_name}) for ${selectedRecord?.mentee?.full_name}? Once verified, marks are permanently locked against student and mentor modifications.`
+            : `Reject the draft academic record for ${selectedRecord?.subject_code}? The student will be notified to review their submission.`
         }
-        confirmText={actionType === 'verified' ? 'Verify Record' : 'Reject Record'}
+        confirmText={actionType === 'verified' ? 'Verify & Lock' : 'Reject Submission'}
         variant={actionType === 'verified' ? 'primary' : 'danger'}
       />
     </div>

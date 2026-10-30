@@ -3,8 +3,54 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --mm-bg: #0D0B12;
+    --mm-bg-secondary: #12101A;
+    --mm-bg-sidebar: #100D17;
+    --mm-card: #191521;
+    --mm-elevated: #211A2D;
+    --mm-border: #30263E;
+    --mm-violet: #8B5CF6;
+    --mm-violet-bright: #A78BFA;
+    --mm-text: #F5F3FA;
+    --mm-text-secondary: #AAA2B8;
+    --mm-text-muted: #777084;
+    --mm-success: #4ADEA8;
+    --mm-warning: #FBBF74;
+    --mm-error: #FB7185;
+  }
+
   body {
-    @apply bg-slate-50 text-slate-900 font-sans antialiased selection:bg-nmam-teal-100 selection:text-nmam-teal-900;
+    background-color: #0D0B12;
+    color: #F5F3FA;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    selection-background-color: #4C1D95;
+    selection-color: #F5F3FA;
+  }
+
+  ::selection {
+    background: #6D28D9;
+    color: #F5F3FA;
+  }
+
+  /* Dark themed subtle scrollbars */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0D0B12;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #251E31;
+    border-radius: 4px;
+    border: 2px solid #0D0B12;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3B2E4E;
   }
 }
 
@@ -14,23 +60,44 @@
 }
 
 @keyframes scaleUp {
-  from { opacity: 0; transform: scale(0.96); }
+  from { opacity: 0; transform: scale(0.97); }
   to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
 .animate-fade-in {
-  animation: fadeIn 0.15s ease-out forwards;
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-scale-up {
-  animation: scaleUp 0.15s ease-out forwards;
+  animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-slide-up {
-  animation: slideUp 0.2s ease-out forwards;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+/* Subtle ambient backdrop grid & glow patterns */
+.mm-grid-pattern {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(48, 38, 62, 0.25) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(48, 38, 62, 0.25) 1px, transparent 1px);
+}
+
+.mm-radial-glow {
+  background: radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
 }

@@ -513,3 +513,4 @@ WITH CHECK (
     bucket_id = 'study-materials'
     AND (public.is_admin() OR public.get_auth_role() = 'mentor')
 );
+

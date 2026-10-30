@@ -86,3 +86,4 @@ describe('Academic Records and SGPA Calculations', () => {
     expect(summaries[0].status).toBe('PENDING');
   });
 });
+

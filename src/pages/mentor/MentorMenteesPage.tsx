@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { dbStore } from '../../services/dbStore';
-import { adminService } from '../../services/adminService';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { ProfileAvatar } from '../../components/ui/ProfileAvatar';
 import { UserProfile, AccessSettings } from '../../types';
 import { 
   Users, 
@@ -44,146 +45,148 @@ export const MentorMenteesPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Users className="w-6 h-6 text-nmam-teal-600" />
-            My Assigned Mentees
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Supervised students at NMAM Institute of Technology, Nitte ({mentees.length} total)
-          </p>
-        </div>
+    <div className="space-y-6 animate-fade-in">
+      <PageHeader
+        title="My Assigned Mentees"
+        subtitle={`Supervised students at NMAM Institute of Technology, Nitte (${mentees.length} total)`}
+        badge={
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#191521] border border-[#30263E] text-[11px] text-[#AAA2B8]">
+            <Users className="w-3.5 h-3.5 text-violet-400" />
+            <span>Assigned Cohort &bull; Mentor Anusha</span>
+          </div>
+        }
+        actions={
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 text-[#777084] absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Filter mentees..."
+              className="w-full pl-9 pr-3.5 py-2 bg-[#12101A] border border-[#30263E] rounded-xl text-xs text-[#F5F3FA] placeholder-[#777084] focus:outline-none focus:border-violet-500"
+            />
+          </div>
+        }
+      />
 
-        <div className="relative w-full sm:w-64">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search mentee name, USN..."
-            className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-nmam-teal-500 focus:outline-none"
-          />
-        </div>
-      </div>
-
-      {/* Grid of Mentee Cards */}
+      {/* Cohort Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredMentees.length === 0 ? (
-          <div className="col-span-full py-12 text-center text-slate-400 bg-white rounded-xl border border-dashed border-slate-200">
-            No mentees found matching your search term.
+          <div className="col-span-full p-8 text-center text-xs text-[#777084]">
+            No mentees found matching "{search}".
           </div>
         ) : (
-          filteredMentees.map((m) => {
-            const access = accessMap[m.id];
-            const canViewContact = access ? access.allow_contact_view : true;
-            const canViewAcademic = access ? access.allow_academic_view : true;
-
-            const cleanPhone = m.phone ? m.phone.replace(/[^0-9]/g, '') : null;
-            const whatsappUrl = cleanPhone ? `https://wa.me/${cleanPhone}` : null;
+          filteredMentees.map((mentee) => {
+            const settings = accessMap[mentee.id];
+            const canViewContact = settings?.allow_contact_view ?? true;
+            const canViewAcademic = settings?.allow_academic_view ?? true;
 
             return (
-              <Card key={m.id} className="flex flex-col justify-between overflow-hidden">
+              <Card
+                key={mentee.id}
+                className="overflow-hidden flex flex-col justify-between hover:border-violet-500/40 hover:shadow-glow-violet-sm transition-all duration-200"
+              >
                 <div>
-                  <CardHeader className="bg-slate-50/50 pb-3">
+                  <CardHeader className="bg-[#12101A]/60 pb-4 border-b border-[#30263E]/60">
                     <div className="flex items-start justify-between w-full">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-nmam-navy-100 text-nmam-navy-800 flex items-center justify-center font-bold text-sm">
-                          {m.full_name.charAt(0)}
-                        </div>
+                        <ProfileAvatar name={mentee.full_name} size="md" />
                         <div>
-                          <h3 className="font-bold text-sm text-slate-900">{m.full_name}</h3>
-                          <div className="text-[11px] font-mono text-slate-500">
-                            {m.usn || 'USN Pending'}
-                          </div>
+                          <h4 className="font-bold text-sm text-[#F5F3FA]">{mentee.full_name}</h4>
+                          <span className="text-[10px] text-[#777084] font-mono">
+                            {mentee.usn || 'USN Pending'}
+                          </span>
                         </div>
                       </div>
-                      <Badge variant="default" size="sm">
-                        Sem {m.semester || 5}
+                      <Badge variant="purple" size="sm">
+                        Sem {mentee.semester || 5}
                       </Badge>
                     </div>
                   </CardHeader>
 
-                  <CardContent className="space-y-3 pt-4 text-xs">
-                    <div>
-                      <div className="text-slate-500 text-[11px] font-medium">Department:</div>
-                      <div className="text-slate-800 font-medium">{m.department || 'Computer Science & Engg'}</div>
-                    </div>
-
-                    {/* Contact details with permission check */}
-                    <div className="pt-2 border-t border-slate-100 space-y-2">
-                      <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
-                        <span>Direct Communication:</span>
-                        {!canViewContact && (
-                          <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                            Restricted by Admin
-                          </span>
-                        )}
+                  <CardContent className="space-y-3.5 pt-4 text-xs">
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-[#777084] text-[10px] uppercase font-bold tracking-wider block">
+                          Academic Department
+                        </span>
+                        <span className="font-medium text-[#F5F3FA]">
+                          {mentee.department} &bull; {mentee.branch}
+                        </span>
                       </div>
 
-                      {canViewContact ? (
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-2">
-                            <Mail className="w-3.5 h-3.5 text-slate-400" />
-                            <a
-                              href={`mailto:${m.email}`}
-                              className="text-nmam-navy-700 hover:underline truncate"
-                            >
-                              {m.email}
-                            </a>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <Phone className="w-3.5 h-3.5 text-slate-400" />
-                            {m.phone ? (
-                              <div className="flex items-center gap-2">
-                                <a
-                                  href={`tel:${m.phone}`}
-                                  className="text-slate-800 hover:text-nmam-navy-700 font-medium"
-                                >
-                                  {m.phone}
+                      {/* Contact channels */}
+                      <div>
+                        <span className="text-[#777084] text-[10px] uppercase font-bold tracking-wider block mb-1">
+                          Direct Contact
+                        </span>
+                        {canViewContact ? (
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2 text-[#AAA2B8]">
+                              <Mail className="w-3.5 h-3.5 text-[#777084]" />
+                              <a href={`mailto:${mentee.email}`} className="hover:text-violet-300 underline truncate">
+                                {mentee.email}
+                              </a>
+                            </div>
+                            {mentee.phone ? (
+                              <div className="flex items-center gap-2 text-[#AAA2B8]">
+                                <Phone className="w-3.5 h-3.5 text-[#777084]" />
+                                <a href={`tel:${mentee.phone}`} className="hover:text-violet-300">
+                                  {mentee.phone}
                                 </a>
-                                {whatsappUrl && (
-                                  <a
-                                    href={whatsappUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-[10px] bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-1.5 py-0.5 rounded font-semibold border border-emerald-200"
-                                  >
-                                    WhatsApp
-                                  </a>
-                                )}
                               </div>
                             ) : (
-                              <span className="text-slate-400 italic">No contact number entered yet</span>
+                              <span className="text-[#777084] italic text-[11px] block">
+                                Student has not entered phone number yet
+                              </span>
                             )}
                           </div>
-                        </div>
-                      ) : (
-                        <div className="text-slate-400 italic text-[11px] bg-slate-50 p-2 rounded">
-                          Contact details withheld by administrative policy.
-                        </div>
-                      )}
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/20 p-2 rounded-lg">
+                            <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span>Contact info restricted by administrator policy</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Academic view status */}
                     {!canViewAcademic && (
-                      <div className="p-2 rounded bg-amber-50 border border-amber-100 text-amber-800 text-[11px] flex items-center gap-1.5">
-                        <ShieldAlert className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
-                        <span>Academic records view withheld by administrator.</span>
+                      <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[11px] flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>Academic records view temporarily restricted by administrator</span>
                       </div>
                     )}
                   </CardContent>
                 </div>
 
-                <div className="p-3 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400">
-                    NMAMIT CSE
-                  </span>
-                  <Link to={`/mentor/mentees/${m.id}`}>
-                    <Button size="sm" variant="teal" className="text-xs py-1 px-3" rightIcon={<ArrowRight className="w-3 h-3" />}>
+                <div className="p-4 bg-[#12101A]/60 border-t border-[#30263E]/60 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    {canViewContact && (
+                      <>
+                        <a
+                          href={`mailto:${mentee.email}`}
+                          className="p-1.5 rounded-lg bg-[#191521] border border-[#30263E] text-[#AAA2B8] hover:text-[#F5F3FA] transition"
+                          title="Compose Email"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                        </a>
+                        {mentee.phone && (
+                          <a
+                            href={`https://wa.me/${mentee.phone.replace(/[^0-9]/g, '')}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-1.5 rounded-lg bg-[#191521] border border-[#30263E] text-[#4ADEA8] hover:bg-[#4ADEA8]/10 transition"
+                            title="Chat on WhatsApp"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  <Link to={`/mentor/mentees/${mentee.id}`}>
+                    <Button size="sm" variant="outline" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
                       Academic Dossier
                     </Button>
                   </Link>

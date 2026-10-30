@@ -74,3 +74,4 @@ export const notesService = {
     dbStore.logAction(actorId, 'MENTOR_NOTE_DELETED', 'MENTOR_NOTE', noteId);
   },
 };
+

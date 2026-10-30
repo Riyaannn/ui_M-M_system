@@ -210,4 +210,12 @@ export const academicService = {
 
     return summaries;
   },
+
+  identifyImprovementSubjects(records: AcademicRecord[]): AcademicRecord[] {
+    return records.filter(r => {
+      if (r.total_marks == null || r.maximum_marks <= 0) return false;
+      return (r.total_marks / r.maximum_marks) < 0.5 || r.result_status === 'FAIL';
+    });
+  },
 };
+

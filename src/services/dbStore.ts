@@ -10,6 +10,7 @@ import {
 } from '../types';
 import { 
   INITIAL_PROFILES, 
+  INITIAL_ADMIN_ID,
   INITIAL_ACCESS_SETTINGS, 
   INITIAL_RECOMMENDATIONS, 
   INITIAL_MENTOR_NOTES, 
@@ -120,13 +121,25 @@ export const dbStore = {
     return state.profiles.filter(p => p.role === 'mentor');
   },
 
-  updateProfile(id: string, updates: Partial<UserProfile>): UserProfile {
+  updateProfile(id: string, updates: Partial<UserProfile>, actorId?: string): UserProfile {
     const idx = state.profiles.findIndex(p => p.id === id);
     if (idx === -1) throw new Error('Profile not found');
     
+    const existing = state.profiles[idx];
+    const actor = actorId ? state.profiles.find(p => p.id === actorId) : null;
+    const isAdmin = actor?.role === 'admin' || actorId === INITIAL_ADMIN_ID;
+
+    // Privilege protection (mirroring PostgreSQL protect_profile_privileges trigger)
+    const sanitizedUpdates = { ...updates };
+    if (!isAdmin) {
+      delete sanitizedUpdates.role;
+      delete sanitizedUpdates.mentor_id;
+      delete sanitizedUpdates.is_active;
+    }
+
     state.profiles[idx] = {
-      ...state.profiles[idx],
-      ...updates,
+      ...existing,
+      ...sanitizedUpdates,
       updated_at: new Date().toISOString(),
     };
     persist();
@@ -161,15 +174,20 @@ export const dbStore = {
   },
 
   assignMenteeToMentor(menteeId: string, mentorId: string | null): UserProfile {
-    const mentee = this.updateProfile(menteeId, { mentor_id: mentorId });
+    const idx = state.profiles.findIndex(p => p.id === menteeId);
+    if (idx === -1) throw new Error('Profile not found');
+
+    state.profiles[idx].mentor_id = mentorId;
+    state.profiles[idx].updated_at = new Date().toISOString();
+
     // update access settings too
     const accIdx = state.accessSettings.findIndex(a => a.mentee_id === menteeId);
     if (accIdx !== -1) {
       state.accessSettings[accIdx].mentor_id = mentorId;
       state.accessSettings[accIdx].updated_at = new Date().toISOString();
-      persist();
     }
-    return mentee;
+    persist();
+    return this.getProfileById(menteeId)!;
   },
 
   // Access Settings
@@ -269,12 +287,26 @@ export const dbStore = {
     };
   },
 
-  updateAcademicRecord(id: string, updates: Partial<AcademicRecord>): AcademicRecord {
+  updateAcademicRecord(id: string, updates: Partial<AcademicRecord>, actorId?: string): AcademicRecord {
     const idx = state.academicRecords.findIndex(r => r.id === id);
     if (idx === -1) throw new Error('Academic record not found');
 
+    const existing = state.academicRecords[idx];
+    const actor = actorId ? state.profiles.find(p => p.id === actorId) : null;
+    const isAdmin = actor?.role === 'admin' || actorId === INITIAL_ADMIN_ID;
+
+    // Academic Data Guard (mirroring PostgreSQL protect_academic_records trigger)
+    if (!isAdmin) {
+      if (existing.verification_status === 'verified') {
+        throw new Error('Verified academic records cannot be altered by mentees or mentors.');
+      }
+      if (updates.verification_status && updates.verification_status === 'verified') {
+        throw new Error('Only administrators can verify academic records.');
+      }
+    }
+
     const updated = {
-      ...state.academicRecords[idx],
+      ...existing,
       ...updates,
       updated_at: new Date().toISOString(),
     };
@@ -298,7 +330,7 @@ export const dbStore = {
     return this.updateAcademicRecord(id, {
       verification_status: status,
       verified_by: verifiedBy,
-    });
+    }, verifiedBy);
   },
 
   deleteAcademicRecord(id: string): void {

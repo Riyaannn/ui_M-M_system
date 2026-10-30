@@ -1,332 +1,172 @@
-# NMAMIT Mentor–Mentee Management System
+# M&M — Mentor & Mentee Management System
 
-**An Enterprise-Grade, Production-Style Web Portal for NMAM Institute of Technology (NMAMIT), Nitte**
+**An Art-Directed, Premium Dark SaaS Platform for NMAM Institute of Technology (NMAMIT), Nitte**
+
+> *"Your academic journey, with the right guidance."*  
+> *Subtitle: "Mentoring, thoughtfully designed"*
 
 ---
 
-## 1. Project Overview & Institutional Architecture
+## 1. Brand Identity & Institutional Framework
 
-The **NMAMIT Mentor–Mentee Management System** is a full-stack, secure, role-based platform designed specifically for **NMAM Institute of Technology (NMAMIT), Nitte** (An Autonomous Institution affiliated with Nitte Deemed to be University). 
+**M&M** (*Mentor & Mentee*) is an enterprise-grade, full-stack mentoring platform crafted specifically for **NMAM Institute of Technology (NMAMIT), Nitte** (An Autonomous Institution affiliated with Nitte Deemed to be University).
 
-The system automates and supervises undergraduate student mentoring across the institution:
-- **Demonstration Mentor:** Anusha (Faculty Mentor, Computer Science & Engineering)
+- **Brand Wordmark:** **M&M**
+- **Brand Personality:** Premium, modern, calm, intelligent, personal, and academically focused. Visually distinct from generic administrative templates.
+- **Institutional Context:** "NMAMIT, Nitte" serves as the secondary institutional identifier across the navigation sidebar, footer, and dossier badges.
+- **Demonstration Faculty Mentor:** **Anusha** (Department of Computer Science & Engineering)
 - **Initial 6 Demonstration Mentees:**
-  1. Riya Ann
-  2. Riya Pai
-  3. Rohan
-  4. Roshwin
-  5. Sinchana
-  6. Vijeth
-- All 6 initial mentees are pre-assigned to Mentor **Anusha**.
-- **Privacy & Integrity Standard:** Personal telephone numbers, private email addresses, and marks are **not** invented or hallucinated; placeholder and empty states are provided so students and administrators enter verified information.
-- **Academic Verification Principle:** Mentees may submit draft marks from semester examinations; these are marked as `pending` verification and cannot be altered once an authorized administrator audits, verifies, and publishes them.
+  1. **Riya Ann**
+  2. **Riya Pai**
+  3. **Rohan**
+  4. **Roshwin**
+  5. **Sinchana**
+  6. **Vijeth**
+- All 6 students are pre-assigned to Mentor **Anusha**.
+- **Privacy & Integrity Standard:** Personal telephone numbers, private email addresses, and marks are **never** fabricated. Empty and placeholder states prompt verified administrative entry.
+- **Academic Verification Principle:** Students submit draft marks; they remain `pending` verification until audited, verified, and published by an administrator, after which they are permanently locked against student and mentor modifications.
 
 ---
 
-## 2. Technology Stack
+## 2. Visual Design System & Design Tokens
+
+M&M is built from the ground up with a dark charcoal and deep-purple visual theme:
+
+| Token / Concept | Value / Hex Code | Usage |
+| :--- | :--- | :--- |
+| **Main Background** | `#0D0B12` | Root application background with subtle ambient grid (`mm-grid-pattern`) |
+| **Secondary Background**| `#12101A` | Navigation headers, filter trays, table headers |
+| **Sidebar Background** | `#100D17` | Left application navigation drawer |
+| **Card Background** | `#191521` | Elevated container surfaces |
+| **Elevated Surface** | `#211A2D` | Hover states, modals, and featured cards |
+| **Fine Border** | `#30263E` | Crisp, visible card and input borders |
+| **Subtle Border** | `#251E31` | Dividers, scrollbar thumbs, and inner dividers |
+| **Primary Violet** | `#8B5CF6` | Brand action buttons, active navigation indicators, key highlights |
+| **Bright Violet** | `#A78BFA` | Contrast accents, badges, and focus rings |
+| **Soft Lavender** | `#C4B5FD` | Active badge text and typography highlights |
+| **Main Text** | `#F5F3FA` | High-contrast body, editorial headings |
+| **Secondary Text** | `#AAA2B8` | Subtitles, labels, and helper descriptions |
+| **Muted Text** | `#777084` | Meta timestamps, placeholder values, and borders |
+| **Success Emerald** | `#4ADEA8` | Verified marks, active accounts, read status |
+| **Warning Amber** | `#FBBF74` | Pending verification, unread recommendations |
+| **Error Rose** | `#FB7185` | Deactivated accounts, failed marks, access restrictions |
+
+---
+
+## 3. Dedicated Login Experiences & Role Architecture
+
+M&M guarantees role isolation through three distinct login portals and an editorial directory:
+
+| Route | Portal Name | Intended Role | Description |
+| :--- | :--- | :--- | :--- |
+| `/login` | **Portal Directory** | Public Entry | Two-part composition: Brand statement & features on left; 3 distinct portal choices on right. |
+| `/admin/login` | **Administration Portal** | `admin` | Executive institutional oversight, marks publication, mentor assignments, and access matrix. |
+| `/mentor/login` | **Mentor Portal** | `mentor` | Supervised cohort view for Mentor Anusha, student dossiers, study notes, and private counseling observations. |
+| `/mentee/login` | **Student Portal** | `mentee` | Individual mentee journey: mentor info, featured study resources, marks, and draft submissions. |
+
+### Strict Account Isolation Rules:
+1. **Cross-Role Denial:** Entering mentor or mentee credentials on `/admin/login` immediately rejects the session with a uniform authorization alert.
+2. **Deactivated Account Lockdown:** Deactivated accounts (`is_active = false`) are prohibited at authentication and RLS levels.
+3. **Server-Side Enforcement:** PostgreSQL `SECURITY DEFINER` functions verify role identity directly in the database (`profiles.role`), preventing client-side spoofing.
+
+---
+
+## 4. Component & Design-System Abstraction
+
+The UI is structured into modular, reusable components:
+
+- **Layout & Shell:**
+  - `AppShell.tsx`: Unified desktop and mobile shell with compact sidebar, breadcrumbs, search shortcut (`⌘K`), user initials avatar (`ProfileAvatar`), and logout confirmation modal.
+  - `AdminLayout.tsx`: Administration shell routing `/admin/*`.
+  - `MentorLayout.tsx`: Faculty mentor shell routing `/mentor/*`.
+  - `MenteeLayout.tsx`: Student mentee shell routing `/mentee/*`.
+- **UI Components:**
+  - `Button.tsx`: Primary gradient (`from-violet-600 to-purple-600`), Secondary (`bg-[#211A2D]`), Ghost, Outline, and Danger.
+  - `Card.tsx`: Deep surface `#191521` with fine `#30263E` border and dark shadow.
+  - `Badge.tsx`: `RoleBadge`, `VerificationBadge`, `ResultBadge`, and semantic status tags.
+  - `StatCard.tsx`: Dark metric cards with violet hover glow.
+  - `ProfileAvatar.tsx`: Initials avatar with violet-to-indigo gradient.
+  - `PageHeader.tsx`: Editorial header with badge, title, subtitle, and action buttons.
+  - `Modal.tsx` & `ConfirmDialog.tsx`: Backdrop blur with keyboard accessible `Escape` handler.
+  - `EmptyState.tsx`: Atmospheric empty state with violet icon container.
+  - `LoadingSpinner.tsx`: Dark themed violet loader.
+
+---
+
+## 5. Technology Stack
 
 - **Frontend:** React 18 with Vite 6
 - **Language:** TypeScript 5 (Strict Mode)
-- **Styling:** Tailwind CSS (Navy Blue `#0f2438`, `#0a1724`, clean whites, and subtle teal `#0d9488` accents)
+- **Styling:** Tailwind CSS with M&M dark design tokens
 - **Icons:** Lucide React
-- **Routing:** React Router v6 with Role-Based Protected Routes
+- **Routing:** React Router v6 with `RoleGuard` & `ProtectedRoute` architectures
 - **Form Management & Validation:** React Hook Form and Zod schemas
-- **Database & Storage:** Supabase PostgreSQL with Row Level Security (RLS) and Private Storage Buckets
+- **Database & Storage:** Supabase PostgreSQL with Row Level Security (RLS)
 - **Authentication:** Supabase Auth (Email & Password + Password Recovery)
-- **Visualizations:** Recharts (Marks breakdown and academic progress)
-- **Testing:** Vitest 3, React Testing Library, and JSDOM
+- **Visualizations:** Recharts (Dark theme marks breakdown and academic progress)
+- **Testing:** Vitest 3, React Testing Library, and JSDOM (**28 automated tests passing 100%**)
 
 ---
 
-## 3. Project Structure
-
-```text
-ui_project/
-├── index.html
-├── package.json
-├── tsconfig.json
-├── vite.config.ts
-├── tailwind.config.js
-├── postcss.config.js
-├── .env.example
-├── .gitignore
-├── supabase/
-│   ├── migrations/
-│   │   └── 20261028000000_initial_schema.sql  # Complete schema, functions, triggers & RLS policies
-│   └── seed.sql                               # Safe, idempotent seed script (Anusha & 6 mentees)
-└── src/
-    ├── main.tsx
-    ├── App.tsx
-    ├── index.css
-    ├── vite-env.d.ts
-    ├── types/
-    │   └── index.ts                           # Comprehensive TypeScript data interfaces
-    ├── lib/
-    │   ├── supabase.ts                        # Centralized Supabase client with smart fallback
-    │   ├── mockData.ts                        # Initial demonstration data for NMAMIT
-    │   └── validation.ts                      # Zod validation schemas
-    ├── contexts/
-    │   ├── AuthContext.tsx                    # Multi-role authentication & session state
-    │   └── ToastContext.tsx                   # Toast notification system
-    ├── services/
-    │   ├── dbStore.ts                         # Reactive data layer & audit trail engine
-    │   ├── authService.ts                     # Auth flows & password recovery
-    │   ├── profileService.ts                  # Profile CRUD, mentor assignment & active toggles
-    │   ├── academicService.ts                 # Academic records & SGPA/percentage calculations
-    │   ├── recommendationService.ts           # Study resources, PDF uploads & view tracking
-    │   ├── notesService.ts                    # Confidential mentor observations
-    │   └── adminService.ts                    # Admin stats, privacy governance & CSV export
-    ├── components/
-    │   ├── ui/
-    │   │   ├── Button.tsx
-    │   │   ├── Card.tsx
-    │   │   ├── Badge.tsx
-    │   │   ├── Modal.tsx
-    │   │   ├── ConfirmDialog.tsx
-    │   │   ├── StatCard.tsx
-    │   │   ├── EmptyState.tsx
-    │   │   └── LoadingSpinner.tsx
-    │   └── layout/
-    │       ├── Header.tsx                     # Header with NMAMIT branding & 1-click Role Switcher
-    │       ├── Sidebar.tsx                    # Role-specific navigation sidebar
-    │       └── DashboardLayout.tsx
-    ├── routes/
-    │   └── ProtectedRoute.tsx                 # Strict role-based route guard
-    ├── pages/
-    │   ├── auth/
-    │   │   ├── LoginPage.tsx                  # Email/password login with demo shortcuts
-    │   │   ├── ForgotPasswordPage.tsx         # Password reset dispatch
-    │   │   ├── UnauthorizedPage.tsx           # 403 Forbidden handler
-    │   │   └── NotFoundPage.tsx               # 404 Not Found handler
-    │   ├── admin/
-    │   │   ├── AdminDashboardPage.tsx         # Executive metrics & audit feed
-    │   │   ├── AdminMentorsPage.tsx           # Faculty mentor administration
-    │   │   ├── AdminMenteesPage.tsx           # Student directory & CSV export
-    │   │   ├── AdminMenteeProfilePage.tsx     # Student dossier & marks publisher
-    │   │   ├── AdminAssignmentsPage.tsx       # Mentoring cohort allocation
-    │   │   ├── AdminVerificationsPage.tsx     # Marks audit & verification console
-    │   │   ├── AdminPermissionsPage.tsx       # Per-student privacy matrix
-    │   │   └── AdminAuditLogsPage.tsx         # Immutable security trail
-    │   ├── mentor/
-    │   │   ├── MentorDashboardPage.tsx        # Faculty overview & quick actions
-    │   │   ├── MentorMenteesPage.tsx          # Assigned cohort directory with contact links
-    │   │   ├── MentorMenteeDetailPage.tsx     # Dossier, marks chart & private observations
-    │   │   ├── MentorRecommendationsPage.tsx  # Learning material publisher & view tracker
-    │   │   └── MentorNotesPage.tsx            # Private counseling logs
-    │   └── mentee/
-    │       ├── MenteeDashboardPage.tsx        # Semester progress, mentor & recommendation alerts
-    │       ├── MenteeProfilePage.tsx          # Demographic editor (subject to admin lock)
-    │       ├── MenteeAcademicRecordsPage.tsx  # Marks view, SGPA & examination draft submissions
-    │       ├── MenteeMentorPage.tsx           # Mentor contact information & office hours
-    │       └── MenteeRecommendationsPage.tsx  # Study resource reader & "Mark as Read" action
-    └── test/
-        ├── setup.ts
-        ├── auth.test.ts                       # Unit tests for session & login
-        ├── security_rls.test.ts               # Unit tests for access control & verified lock
-        ├── academic_calculations.test.ts      # Unit tests for SGPA & percentage
-        └── components.test.tsx                # Unit tests for badges and UI components
-```
-
----
-
-## 4. Database Schema & Row Level Security (RLS)
-
-All database entities are fully defined in `supabase/migrations/20261028000000_initial_schema.sql`.
-
-### Relational Tables:
-1. `profiles`:
-   - `id` (UUID references `auth.users`)
-   - `full_name`, `email`, `phone`
-   - `role` (`'admin' | 'mentor' | 'mentee'`)
-   - `college`, `department`, `branch`, `usn`, `semester`
-   - `mentor_id` (UUID references `profiles.id`)
-   - `is_active` (boolean default true)
-   - `created_at`, `updated_at`
-2. `access_settings`:
-   - `mentee_id`, `mentor_id`
-   - `allow_academic_view` (controls mentor visibility)
-   - `allow_profile_edit` (controls student self-editing)
-   - `allow_contact_view` (controls phone/email disclosure)
-3. `academic_records`:
-   - `mentee_id`, `semester`, `academic_year`, `subject_code`, `subject_name`, `credits`
-   - `internal_marks`, `external_marks`, `total_marks`, `maximum_marks`, `grade`
-   - `result_status` (`'PASS' | 'FAIL' | 'PENDING' | 'WITHHELD'`)
-   - `verification_status` (`'pending' | 'verified' | 'rejected'`)
-   - `verified_by`, `submitted_by`
-4. `mentor_notes`:
-   - `mentor_id`, `mentee_id`, `title`, `note_content`, `subject`, `visibility`
-   - Confidential observations strictly visible to faculty mentor & admins.
-5. `recommendations`:
-   - `mentor_id`, `mentee_id`, `title`, `description`, `subject`, `resource_type`, `resource_url`, `file_path`, `follow_up_date`
-6. `recommendation_views`:
-   - `recommendation_id`, `mentee_id`, `viewed_at`
-   - Tracks when a student accesses a recommendation.
-7. `audit_logs`:
-   - Immutable security table recording `actor_id`, `action`, `target_type`, `target_id`, `details`, `created_at`.
-8. `storage.buckets`:
-   - Private bucket `study-materials` with signed URL access.
-
-### Recursive RLS Prevention:
-To prevent PostgreSQL infinite recursion loops when querying `profiles` within policies on `profiles`, the schema employs `SECURITY DEFINER` helper functions with a fixed search path (`SET search_path = public`):
-- `public.get_auth_role()`
-- `public.is_admin()`
-- `public.get_assigned_mentor_id()`
-- `public.is_assigned_mentor(p_mentee_id uuid)`
-- `public.can_mentor_view_academic(p_mentee_id uuid)`
-- `public.can_mentor_view_contact(p_mentee_id uuid)`
-- `public.can_mentee_edit_profile(p_mentee_id uuid)`
-
-Triggers enforce that:
-- Non-administrators cannot escalate their role or flip `is_active`.
-- Verified academic records cannot be altered by students or mentors.
-
----
-
-## 5. Step-by-Step Setup & Deployment Instructions
+## 6. Setup & Execution Commands
 
 ### Prerequisites
 - Node.js (v18 or higher; v24 recommended)
 - npm or pnpm
-- A Supabase account (free tier works)
-
----
 
 ### Step 1: Install Dependencies
 ```bash
 npm install
 ```
 
----
-
-### Step 2: Configure Environment Variables
+### Step 2: Environment Configuration
 Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
-Populate your Supabase Project URL and Public Anon Key:
+Populate Supabase credentials:
 ```env
 VITE_SUPABASE_URL=https://<your-supabase-project-id>.supabase.co
 VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
 ```
-*(Note: If no Supabase credentials are provided initially, the application automatically loads in zero-configuration Demonstration Mode with Anusha and the 6 mentees pre-seeded).*
+*(If no Supabase credentials are provided, M&M loads seamlessly in Demonstration Mode with Anusha and the 6 initial mentees pre-seeded).*
 
----
-
-### Step 3: Apply Database Migrations in Supabase
-1. Open your Supabase Dashboard -> **SQL Editor**.
-2. Open and copy the contents of `supabase/migrations/20261028000000_initial_schema.sql`.
-3. Run the script. This creates:
-   - All relational tables
-   - Foreign key constraints & performance indexes
-   - Triggers for privilege protection & verified marks lock
-   - Security Definer helper functions
-   - Row Level Security (RLS) policies
-   - The private `study-materials` storage bucket
-
----
-
-### Step 4: Run the Idempotent Seed Script
-In the Supabase **SQL Editor**:
-1. Copy the contents of `supabase/seed.sql`.
-2. Run the script.
-3. This creates:
-   - Mentor **Anusha** (`anusha.mentor@nmamit.nitte.edu`)
-   - Initial 6 Mentees: **Riya Ann**, **Riya Pai**, **Rohan**, **Roshwin**, **Sinchana**, **Vijeth**
-   - Assigns all 6 mentees to Mentor Anusha
-   - Sets up default access permissions
-   - Inserts initial demonstration study recommendations
-
----
-
-### Step 5: Launch Development Server
+### Step 3: Run Development Server
 ```bash
 npm run dev
 ```
-Open your browser at `http://localhost:5173`.
+Open [http://localhost:5173](http://localhost:5173).
 
----
-
-### Step 6: Run Automated Tests
+### Step 4: Run Automated Tests
 ```bash
-npm run test
+npm test
 ```
-All 17 tests verify:
-- Authentication and session states
-- Role-based route guards
-- Immutability of verified marks
-- Mentor cohort isolation
-- Recommendation read-status logging
-- Academic SGPA & credit calculations
+All **28 tests across 5 test suites pass**:
+- `academic_calculations.test.ts` (SGPA, credit weighting)
+- `auth.test.ts` (Authentication, deactivation, role validation)
+- `account_isolation.test.ts` (Cross-portal denial, mentor cohort isolation)
+- `security_rls.test.ts` (Verified marks immutability, RLS enforcement)
+- `components.test.tsx` (Component rendering)
 
----
-
-### Step 7: Build for Production
+### Step 5: Build for Production
 ```bash
 npm run build
 ```
-Creates an optimized static bundle in `dist/`.
+Generates an optimized production bundle in `dist/`.
 
 ---
 
-### Step 8: Deploy Frontend to Vercel
-1. Push your repository to GitHub / GitLab.
-2. In the **Vercel Dashboard**, click **Add New Project** and select the repository.
-3. Set the Framework Preset to **Vite**.
-4. Add the Environment Variables:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-5. Click **Deploy**.
-6. In **Supabase Dashboard** -> **Authentication** -> **URL Configuration**, add your Vercel production domain to **Redirect URLs** (e.g., `https://your-app.vercel.app/**`).
+## 7. Demonstration Accounts
 
----
+Each login page includes a **Fill Demo** button:
 
-## 6. Demonstration Accounts & Evaluation Matrix
-
-For seamless evaluation, the login page features **1-Click Demo Logins** and a persistent **Role Switcher** in the navigation header:
-
-| Role | Name | Email | Initial Status |
+| Role | Portal URL | Name | Demo Login Email |
 | :--- | :--- | :--- | :--- |
-| **Administrator** | System Administrator | `admin@nmamit.nitte.edu` | Full institutional oversight |
-| **Mentor** | Anusha | `anusha.mentor@nmamit.nitte.edu` | Supervised cohort of 6 mentees |
-| **Mentee 1** | Riya Ann | `riya.ann.demo@nmamit.nitte.edu` | Sem 5 &bull; Assigned to Anusha |
-| **Mentee 2** | Riya Pai | `riya.pai.demo@nmamit.nitte.edu` | Sem 5 &bull; Assigned to Anusha |
-| **Mentee 3** | Rohan | `rohan.demo@nmamit.nitte.edu` | Sem 5 &bull; Assigned to Anusha |
-| **Mentee 4** | Roshwin | `roshwin.demo@nmamit.nitte.edu` | Sem 5 &bull; Assigned to Anusha |
-| **Mentee 5** | Sinchana | `sinchana.demo@nmamit.nitte.edu` | Sem 5 &bull; Assigned to Anusha |
-| **Mentee 6** | Vijeth | `vijeth.demo@nmamit.nitte.edu` | Sem 5 &bull; Assigned to Anusha |
-
----
-
-## 7. Quality Assurance & Manual Testing Checklist
-
-### 1. Administrator Workflow Checklist
-- [x] Sign in as Administrator (`admin@nmamit.nitte.edu`).
-- [x] Verify Dashboard shows 6 Mentees, 1 Mentor (Anusha), pending marks, and live audit feed.
-- [x] Go to **Manage Mentees** and click **Export CSV**; verify CSV file is downloaded.
-- [x] Open **Mentor Assignment**; reassign a student to another faculty mentor or unassign.
-- [x] Navigate to **Marks Verification**; view draft scores submitted by students and click **Verify & Publish**.
-- [x] Navigate to **Access Permissions**; toggle "Mentee Profile Edit" or "Mentor Academic View" for a student and verify that permissions update instantly.
-
-### 2. Mentor (Anusha) Workflow Checklist
-- [x] Sign in as Mentor **Anusha**.
-- [x] Verify you only see your 6 assigned mentees (Riya Ann, Riya Pai, Rohan, Roshwin, Sinchana, Vijeth).
-- [x] Click on a mentee (e.g. Riya Ann) to open their academic dossier.
-- [x] Verify the performance chart and marks breakdown.
-- [x] Click **Add Private Observation** and save a confidential note; confirm it appears only on your screen.
-- [x] Click **Recommend Study Notes**; enter title, subject, and resource URL.
-- [x] Open **Recommendations** tab; verify you can track whether the mentee has viewed the recommendation.
-
-### 3. Mentee Workflow Checklist
-- [x] Sign in as Mentee (e.g. **Riya Ann** or **Riya Pai**).
-- [x] Verify your dashboard shows profile completion % and assigned mentor **Anusha**.
-- [x] Click **My Mentor**; test direct `mailto:` link, phone link, and WhatsApp link.
-- [x] Go to **Recommended Notes**; open the study resource and click **Mark as Read**.
-- [x] Go to **Academic Records**; click **Submit Examination Marks** to enter CIE/SEE draft scores.
-- [x] Confirm the submitted score is tagged as **Pending Verification** and cannot alter verified results.
-- [x] Attempt to navigate directly to `/admin/dashboard` in the URL; verify you are redirected to `/unauthorized` with a 403 Forbidden alert.
-
----
-
-## 8. Institutional Compliance
-
-Developed in alignment with the academic regulations of **NMAM Institute of Technology (NMAMIT), Nitte**, ensuring secure student mentoring, academic integrity, and strict separation of faculty and administrative privileges.
+| **Administrator** | `/admin/login` | System Administrator | `admin@nmamit.nitte.edu` |
+| **Mentor** | `/mentor/login` | Anusha | `anusha.mentor@nmamit.nitte.edu` |
+| **Mentee 1** | `/mentee/login` | Riya Ann | `riya.ann.demo@nmamit.nitte.edu` |
+| **Mentee 2** | `/mentee/login` | Riya Pai | `riya.pai.demo@nmamit.nitte.edu` |
+| **Mentee 3** | `/mentee/login` | Rohan | `rohan.demo@nmamit.nitte.edu` |
+| **Mentee 4** | `/mentee/login` | Roshwin | `roshwin.demo@nmamit.nitte.edu` |
+| **Mentee 5** | `/mentee/login` | Sinchana | `sinchana.demo@nmamit.nitte.edu` |
+| **Mentee 6** | `/mentee/login` | Vijeth | `vijeth.demo@nmamit.nitte.edu` |

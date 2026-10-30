@@ -205,3 +205,4 @@ export const adminService = {
     document.body.removeChild(link);
   },
 };
+

@@ -10,6 +10,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Ca
 import { Button } from '../../components/ui/Button';
 import { Badge, VerificationBadge, ResultBadge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { ProfileAvatar } from '../../components/ui/ProfileAvatar';
 import { UserProfile, AcademicRecord, MentorNote, AccessSettings, SemesterSummary } from '../../types';
 import { 
   ArrowLeft, 
@@ -24,7 +26,8 @@ import {
   TrendingUp, 
   Trash2,
   ShieldAlert,
-  GraduationCap
+  GraduationCap,
+  MessageSquare
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -65,10 +68,23 @@ export const MentorMenteeDetailPage: React.FC = () => {
   const [recUrl, setRecUrl] = useState('');
   const [recFollowUp, setRecFollowUp] = useState('');
 
+  const [unauthorizedAccess, setUnauthorizedAccess] = useState(false);
+
   const loadData = async () => {
     if (!id || !profile) return;
     const m = dbStore.getProfileById(id);
+
+    // Strict account isolation: Verify student belongs to this mentor!
+    if (m && m.mentor_id !== profile.id) {
+      setUnauthorizedAccess(true);
+      setMentee(null);
+      return;
+    }
+
+    setUnauthorizedAccess(false);
     setMentee(m);
+
+    if (!m) return;
 
     const acc = dbStore.getAccessSettings(id);
     setAccess(acc);
@@ -88,13 +104,38 @@ export const MentorMenteeDetailPage: React.FC = () => {
     loadData();
   }, [id, profile]);
 
+  if (unauthorizedAccess) {
+    return (
+      <div className="p-8 max-w-lg mx-auto text-center bg-[#191521] rounded-2xl border border-rose-500/30 shadow-2xl mt-12">
+        <div className="w-14 h-14 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto mb-4">
+          <ShieldAlert className="w-7 h-7" />
+        </div>
+        <h2 className="text-lg font-bold text-[#F5F3FA]">Access Denied: Unassigned Mentee</h2>
+        <p className="text-xs text-[#AAA2B8] mt-2 leading-relaxed">
+          You are not authorized to access this student record because they are not assigned to your supervision cohort.
+        </p>
+        <div className="mt-6">
+          <Link to="/mentor/mentees">
+            <Button size="sm" variant="secondary" leftIcon={<ArrowLeft className="w-3.5 h-3.5" />}>
+              Return to My Mentees
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (!mentee) {
-    return <div className="p-8 text-center text-slate-500">Mentee not found.</div>;
+    return (
+      <div className="p-8 text-center text-xs text-[#AAA2B8]">
+        Loading student dossier...
+      </div>
+    );
   }
 
   const handleCreateNote = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!noteTitle || !noteContent || !profile) return;
+    if (!profile) return;
 
     try {
       await notesService.createNote({
@@ -106,7 +147,7 @@ export const MentorMenteeDetailPage: React.FC = () => {
         visibility: noteVisibility,
       }, profile.id);
 
-      success('Private mentor note saved');
+      success('Private observation note saved securely');
       setIsAddNoteOpen(false);
       setNoteTitle('');
       setNoteContent('');
@@ -121,16 +162,16 @@ export const MentorMenteeDetailPage: React.FC = () => {
     if (!profile) return;
     try {
       await notesService.deleteNote(noteId, profile.id);
-      success('Note removed');
+      success('Observation note removed');
       loadData();
     } catch (err: any) {
       error(err.message || 'Failed to delete note');
     }
   };
 
-  const handleCreateRec = async (e: React.FormEvent) => {
+  const handleCreateRecommendation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!recTitle || !recSubject || !recDesc || !profile) return;
+    if (!profile) return;
 
     try {
       await recommendationService.createRecommendation({
@@ -145,114 +186,109 @@ export const MentorMenteeDetailPage: React.FC = () => {
         follow_up_date: recFollowUp || null,
       }, profile.id);
 
-      success(`Recommendation assigned to ${mentee.full_name}`);
+      success(`Recommended study resource for ${mentee.full_name}`);
       setIsAddRecOpen(false);
       setRecTitle('');
       setRecSubject('');
       setRecDesc('');
       setRecUrl('');
+      setRecFollowUp('');
+      loadData();
     } catch (err: any) {
       error(err.message || 'Failed to create recommendation');
     }
   };
 
+  const canViewContact = access?.allow_contact_view ?? true;
+  const canViewAcademic = access?.allow_academic_view ?? true;
   const summaries = academicService.calculateSummaries(records);
+  const needsImprovement = academicService.identifyImprovementSubjects(records);
 
-  // Identify subjects needing improvement: e.g. total < 50% or internal < 20
-  const needsImprovement = records.filter(r => {
-    if (r.total_marks != null && r.maximum_marks) {
-      const pct = (r.total_marks / r.maximum_marks) * 100;
-      return pct < 50 || (r.internal_marks != null && r.internal_marks < 20);
-    }
-    return false;
-  });
+  const chartData = records
+    .filter(r => r.internal_marks != null || r.external_marks != null)
+    .map(r => ({
+      subject: r.subject_code,
+      internal: r.internal_marks || 0,
+      external: r.external_marks || 0,
+      total: r.total_marks || 0,
+    }));
 
-  // Chart data
-  const chartData = records.map(r => ({
-    name: r.subject_code,
-    fullName: r.subject_name,
-    Internal: r.internal_marks ?? 0,
-    External: r.external_marks ?? 0,
-    Total: r.total_marks ?? 0,
-  }));
-
-  const canViewContact = access ? access.allow_contact_view : true;
-  const canViewAcademic = access ? access.allow_academic_view : true;
-
-  const cleanPhone = mentee.phone ? mentee.phone.replace(/[^0-9]/g, '') : null;
-  const whatsappUrl = cleanPhone ? `https://wa.me/${cleanPhone}` : null;
+  const whatsappUrl = mentee.phone
+    ? `https://wa.me/${mentee.phone.replace(/[^0-9]/g, '')}`
+    : null;
 
   return (
-    <div className="space-y-6">
-      {/* Back button & top bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Link to="/mentor/mentees">
-            <Button size="sm" variant="outline" leftIcon={<ArrowLeft className="w-4 h-4" />}>
-              Back to Mentees
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              {mentee.full_name} — Academic Dossier
-            </h1>
-            <p className="text-xs text-slate-500 font-mono">
-              USN: {mentee.usn || 'Pending Entry'} &bull; NMAMIT Nitte
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            leftIcon={<StickyNote className="w-4 h-4 text-amber-600" />}
-            onClick={() => setIsAddNoteOpen(true)}
-          >
-            Add Private Observation
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center gap-3">
+        <Link to="/mentor/mentees">
+          <Button size="sm" variant="secondary" leftIcon={<ArrowLeft className="w-4 h-4" />}>
+            Back to Mentees
           </Button>
-          <Button
-            size="sm"
-            variant="teal"
-            leftIcon={<BookMarked className="w-4 h-4" />}
-            onClick={() => setIsAddRecOpen(true)}
-          >
-            Recommend Study Notes
-          </Button>
-        </div>
+        </Link>
       </div>
+
+      <PageHeader
+        title={`${mentee.full_name} — Academic Dossier`}
+        subtitle={`Supervised Undergraduate &bull; USN: ${mentee.usn || 'Pending Entry'}`}
+        badge={
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#191521] border border-[#30263E] text-[11px] text-[#AAA2B8]">
+            <GraduationCap className="w-3.5 h-3.5 text-violet-400" />
+            <span>Assigned Cohort Dossier &bull; NMAMIT, Nitte</span>
+          </div>
+        }
+        actions={
+          <div className="flex items-center gap-2.5">
+            <Button
+              size="sm"
+              variant="secondary"
+              leftIcon={<StickyNote className="w-4 h-4 text-amber-400" />}
+              onClick={() => setIsAddNoteOpen(true)}
+            >
+              Private Observation
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              leftIcon={<BookMarked className="w-4 h-4" />}
+              onClick={() => setIsAddRecOpen(true)}
+            >
+              Recommend Notes
+            </Button>
+          </div>
+        }
+      />
 
       {/* Student Profile Card */}
       <Card>
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-xs">
             <div>
-              <span className="text-slate-400 font-semibold block uppercase tracking-wider text-[10px]">
+              <span className="text-[#777084] font-semibold block uppercase tracking-wider text-[10px]">
                 Student Name
               </span>
-              <span className="text-sm font-bold text-slate-900">{mentee.full_name}</span>
-              <span className="block text-[11px] text-slate-500 mt-0.5">
+              <span className="text-sm font-bold text-[#F5F3FA] mt-0.5 block">{mentee.full_name}</span>
+              <span className="block text-[11px] text-[#AAA2B8] mt-0.5">
                 {mentee.department} &bull; Sem {mentee.semester || 5}
               </span>
             </div>
 
             <div>
-              <span className="text-slate-400 font-semibold block uppercase tracking-wider text-[10px]">
-                College Email
+              <span className="text-[#777084] font-semibold block uppercase tracking-wider text-[10px]">
+                Institutional Email
               </span>
-              <a href={`mailto:${mentee.email}`} className="text-nmam-navy-700 underline font-semibold mt-0.5 block truncate">
+              <a href={`mailto:${mentee.email}`} className="text-violet-300 underline font-semibold mt-0.5 block truncate">
                 {mentee.email}
               </a>
             </div>
 
             <div>
-              <span className="text-slate-400 font-semibold block uppercase tracking-wider text-[10px]">
+              <span className="text-[#777084] font-semibold block uppercase tracking-wider text-[10px]">
                 Contact Number
               </span>
               {canViewContact ? (
                 mentee.phone ? (
                   <div className="flex items-center gap-2 mt-0.5">
-                    <a href={`tel:${mentee.phone}`} className="font-semibold text-slate-800 hover:text-nmam-navy-700">
+                    <a href={`tel:${mentee.phone}`} className="font-semibold text-[#F5F3FA] hover:text-violet-300">
                       {mentee.phone}
                     </a>
                     {whatsappUrl && (
@@ -260,33 +296,33 @@ export const MentorMenteeDetailPage: React.FC = () => {
                         href={whatsappUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[10px] bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-1.5 py-0.5 rounded font-semibold border border-emerald-200"
+                        className="text-[10px] bg-[#4ADEA8]/10 text-[#4ADEA8] px-2 py-0.5 rounded-md font-semibold border border-[#4ADEA8]/30 hover:bg-[#4ADEA8]/20 transition"
                       >
                         WhatsApp
                       </a>
                     )}
                   </div>
                 ) : (
-                  <span className="text-slate-400 italic block mt-0.5">No phone number recorded</span>
+                  <span className="text-[#777084] italic block mt-0.5">No phone number recorded</span>
                 )
               ) : (
-                <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded text-[10px] font-medium block mt-0.5">
-                  Restricted by Admin
+                <span className="text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md text-[10px] font-medium block mt-0.5">
+                  Restricted by Administrator
                 </span>
               )}
             </div>
 
             <div>
-              <span className="text-slate-400 font-semibold block uppercase tracking-wider text-[10px]">
+              <span className="text-[#777084] font-semibold block uppercase tracking-wider text-[10px]">
                 Academic Summary
               </span>
               {summaries.length > 0 && summaries[0].sgpa ? (
-                <div className="font-bold text-slate-900 text-sm mt-0.5">
-                  SGPA: {summaries[0].sgpa} &bull; {summaries[0].percentage}%
+                <div className="font-bold text-[#F5F3FA] text-sm mt-0.5">
+                  SGPA: <span className="text-violet-300">{summaries[0].sgpa}</span> &bull; {summaries[0].percentage}%
                 </div>
               ) : (
-                <span className="text-slate-400 italic block mt-0.5">
-                  SGPA Unavailable (Requires verified credits)
+                <span className="text-[#777084] italic block mt-0.5">
+                  SGPA Unavailable (Pending verified marks)
                 </span>
               )}
             </div>
@@ -294,13 +330,13 @@ export const MentorMenteeDetailPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Needs Improvement Alert if any */}
+      {/* Needs Improvement Alert */}
       {needsImprovement.length > 0 && (
-        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
-          <div className="text-xs text-rose-900">
+        <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
+          <div className="text-xs text-rose-200">
             <span className="font-bold">Intervention Recommended:</span> The student scored below 50% in the following subjects:
-            <ul className="list-disc list-inside mt-1 space-y-0.5 font-medium">
+            <ul className="list-disc list-inside mt-1 space-y-0.5 font-medium text-rose-300">
               {needsImprovement.map(r => (
                 <li key={r.id}>
                   {r.subject_name} ({r.subject_code}): {r.total_marks}/{r.maximum_marks} marks
@@ -319,20 +355,28 @@ export const MentorMenteeDetailPage: React.FC = () => {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-nmam-teal-600" />
+                  <TrendingUp className="w-4 h-4 text-violet-400" />
                   <CardTitle className="text-sm">Semester Subject Marks Breakdown</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} />
-                    <Tooltip />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Bar dataKey="Internal" fill="#0d9488" name="Internal (CIE)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="External" fill="#0f2438" name="External (SEE)" radius={[4, 4, 0, 0]} />
+                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#30263E" />
+                    <XAxis dataKey="subject" stroke="#AAA2B8" fontSize={11} />
+                    <YAxis stroke="#AAA2B8" fontSize={11} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#191521',
+                        borderColor: '#30263E',
+                        borderRadius: '12px',
+                        color: '#F5F3FA',
+                        fontSize: '11px',
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '11px', color: '#AAA2B8' }} />
+                    <Bar dataKey="internal" name="CIE (Internal)" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="external" name="SEE (External)" fill="#6366F1" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -342,51 +386,40 @@ export const MentorMenteeDetailPage: React.FC = () => {
           {/* Academic Records Table */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Verified & Pending Academic Records</CardTitle>
+              <CardTitle className="text-sm">Semester Examination Scores</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase tracking-wider font-semibold">
+                    <tr className="border-b border-[#30263E]/60 bg-[#12101A]/30 text-[#AAA2B8] uppercase tracking-wider font-semibold text-[10px]">
                       <th className="py-3 px-4">Subject</th>
-                      <th className="py-3 px-4">Semester</th>
+                      <th className="py-3 px-4">Code</th>
                       <th className="py-3 px-4">Credits</th>
                       <th className="py-3 px-4">CIE (Internal)</th>
                       <th className="py-3 px-4">SEE (External)</th>
-                      <th className="py-3 px-4">Total / Max</th>
-                      <th className="py-3 px-4">Grade</th>
+                      <th className="py-3 px-4">Total</th>
                       <th className="py-3 px-4">Status</th>
                       <th className="py-3 px-4">Verification</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-[#30263E]/40">
                     {records.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="py-8 text-center text-slate-400">
-                          No academic records recorded yet for this mentee.
+                        <td colSpan={8} className="py-8 text-center text-[#777084]">
+                          No academic records recorded yet for this student.
                         </td>
                       </tr>
                     ) : (
                       records.map((r) => (
-                        <tr key={r.id} className="hover:bg-slate-50/70 transition-colors">
-                          <td className="py-3 px-4 font-semibold text-slate-900">
-                            {r.subject_name}
-                            <span className="block text-[10px] font-mono text-slate-400">{r.subject_code}</span>
-                          </td>
-                          <td className="py-3 px-4 text-slate-600">Sem {r.semester}</td>
-                          <td className="py-3 px-4 text-slate-600 font-mono">{r.credits}</td>
-                          <td className="py-3 px-4 font-mono text-slate-800">
-                            {r.internal_marks != null ? r.internal_marks : '-'}
-                          </td>
-                          <td className="py-3 px-4 font-mono text-slate-800">
-                            {r.external_marks != null ? r.external_marks : '-'}
-                          </td>
-                          <td className="py-3 px-4 font-mono font-bold text-slate-900">
-                            {r.total_marks != null ? r.total_marks : '-'} / {r.maximum_marks}
-                          </td>
-                          <td className="py-3 px-4 font-bold text-slate-800">
-                            {r.grade || '-'}
+                        <tr key={r.id} className="hover:bg-[#211A2D]/50 transition-colors">
+                          <td className="py-3 px-4 font-semibold text-[#F5F3FA]">{r.subject_name}</td>
+                          <td className="py-3 px-4 font-mono text-violet-300 font-bold">{r.subject_code}</td>
+                          <td className="py-3 px-4 text-[#AAA2B8] font-mono">{r.credits}</td>
+                          <td className="py-3 px-4 text-[#F5F3FA] font-mono">{r.internal_marks ?? '-'}</td>
+                          <td className="py-3 px-4 text-[#F5F3FA] font-mono">{r.external_marks ?? '-'}</td>
+                          <td className="py-3 px-4 font-bold text-violet-300 font-mono">
+                            {r.total_marks ?? '-'} / {r.maximum_marks}
                           </td>
                           <td className="py-3 px-4">
                             <ResultBadge status={r.result_status} />
@@ -404,67 +437,66 @@ export const MentorMenteeDetailPage: React.FC = () => {
           </Card>
         </div>
       ) : (
-        <Card className="bg-amber-50/50 border-amber-200">
-          <CardContent className="p-8 text-center text-amber-900">
-            <ShieldAlert className="w-8 h-8 text-amber-600 mx-auto mb-2" />
-            <h4 className="font-bold text-sm">Academic Records Access Restricted</h4>
-            <p className="text-xs text-amber-700 mt-1 max-w-md mx-auto">
-              The administrator has restricted mentor visibility for this student's marks. Please consult the NMAMIT Academic Office if access is required for counseling.
-            </p>
+        <Card>
+          <CardContent className="p-8 text-center text-[#777084] text-xs">
+            Academic records view is restricted by administrator policy for this student.
           </CardContent>
         </Card>
       )}
 
       {/* Private Mentor Notes Section */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between w-full">
+      <Card className="border-amber-500/20">
+        <CardHeader className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <StickyNote className="w-4 h-4 text-amber-400" />
             <div>
-              <CardTitle className="text-sm">Private Mentor Observations & Notes</CardTitle>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Confidential notes stored privately for Mentor {profile?.full_name} (Not accessible to student)
-              </p>
+              <CardTitle className="text-sm">Confidential Mentor Observations</CardTitle>
+              <p className="text-[11px] text-[#777084]">Strictly private to faculty and administrator eyes</p>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              leftIcon={<Plus className="w-3.5 h-3.5" />}
-              onClick={() => setIsAddNoteOpen(true)}
-            >
-              Add Observation
-            </Button>
           </div>
+          <Button
+            size="sm"
+            variant="secondary"
+            leftIcon={<Plus className="w-3.5 h-3.5" />}
+            onClick={() => setIsAddNoteOpen(true)}
+          >
+            Add Observation
+          </Button>
         </CardHeader>
-        <CardContent className="p-4 space-y-3">
+
+        <CardContent className="space-y-3">
           {notes.length === 0 ? (
-            <div className="text-xs text-slate-400 py-6 text-center">
-              No mentor notes recorded yet for this student. Click above to log mentoring notes.
+            <div className="text-xs text-[#777084] py-6 text-center">
+              No private observations recorded yet for this mentee.
             </div>
           ) : (
-            notes.map((note) => (
-              <div key={note.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 text-xs space-y-2">
+            notes.map((n) => (
+              <div
+                key={n.id}
+                className="p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/5 text-xs space-y-1.5"
+              >
                 <div className="flex items-center justify-between">
-                  <div className="font-bold text-slate-900 text-sm">{note.title}</div>
+                  <span className="font-bold text-[#F5F3FA]">{n.title}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-400">
-                      {new Date(note.created_at).toLocaleDateString()}
+                    <span className="text-[10px] text-[#777084]">
+                      {new Date(n.created_at).toLocaleDateString()}
                     </span>
                     <button
-                      onClick={() => handleDeleteNote(note.id)}
-                      className="text-slate-400 hover:text-rose-600 p-1"
+                      onClick={() => handleDeleteNote(n.id)}
+                      className="text-[#777084] hover:text-rose-400 transition"
                       title="Delete note"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
-                <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
-                  {note.note_content}
+                <p className="text-[#AAA2B8] text-[11px] leading-relaxed whitespace-pre-wrap">
+                  {n.note_content}
                 </p>
-                {note.subject && (
-                  <div className="text-[11px] text-nmam-teal-700 font-semibold pt-1">
-                    Subject / Context: {note.subject}
-                  </div>
+                {n.subject && (
+                  <span className="inline-block text-[10px] font-mono bg-[#191521] border border-[#30263E] text-violet-300 px-2 py-0.5 rounded">
+                    Subject: {n.subject}
+                  </span>
                 )}
               </div>
             ))
@@ -472,131 +504,159 @@ export const MentorMenteeDetailPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Modal: Add Note */}
+      {/* Add Observation Note Modal */}
       <Modal
         isOpen={isAddNoteOpen}
         onClose={() => setIsAddNoteOpen(false)}
-        title="Add Private Mentor Observation"
-        description="Log confidential mentoring interaction or counseling details for this student."
+        title="Add Confidential Observation"
+        description="Private notes visible only to faculty mentors and administrators."
       >
         <form onSubmit={handleCreateNote} className="space-y-4 text-xs">
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Observation Title *</label>
+            <label className="block font-semibold text-[#AAA2B8] uppercase tracking-wider mb-1">
+              Observation Title *
+            </label>
             <input
               type="text"
               required
               value={noteTitle}
               onChange={(e) => setNoteTitle(e.target.value)}
-              placeholder="e.g. Mid-semester academic counseling review"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-nmam-teal-500 focus:outline-none"
+              placeholder="e.g. Needs assistance with DBMS Normalization"
+              className="w-full px-3.5 py-2.5 bg-[#12101A] border border-[#30263E] rounded-xl text-sm text-[#F5F3FA] focus:outline-none focus:border-violet-500"
             />
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Subject / Focus Area</label>
+            <label className="block font-semibold text-[#AAA2B8] uppercase tracking-wider mb-1">
+              Related Subject (Optional)
+            </label>
             <input
               type="text"
               value={noteSubject}
               onChange={(e) => setNoteSubject(e.target.value)}
-              placeholder="e.g. Algorithm Analysis or Time Management"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-nmam-teal-500 focus:outline-none"
+              placeholder="e.g. 22CS501 DBMS"
+              className="w-full px-3.5 py-2.5 bg-[#12101A] border border-[#30263E] rounded-xl text-sm text-[#F5F3FA] focus:outline-none focus:border-violet-500"
             />
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Observation Notes *</label>
+            <label className="block font-semibold text-[#AAA2B8] uppercase tracking-wider mb-1">
+              Observation Details *
+            </label>
             <textarea
               required
               rows={4}
               value={noteContent}
               onChange={(e) => setNoteContent(e.target.value)}
-              placeholder="Enter detailed counseling notes, recommended improvements, and student feedback..."
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-nmam-teal-500 focus:outline-none"
+              placeholder="Enter academic mentoring feedback, exam preparation observations..."
+              className="w-full px-3.5 py-2.5 bg-[#12101A] border border-[#30263E] rounded-xl text-sm text-[#F5F3FA] focus:outline-none focus:border-violet-500"
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-            <Button type="button" variant="outline" size="sm" onClick={() => setIsAddNoteOpen(false)}>
+          <div className="pt-4 border-t border-[#30263E]/60 flex items-center justify-end gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsAddNoteOpen(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit" variant="teal" size="sm">
+            <Button type="submit" variant="primary">
               Save Private Note
             </Button>
           </div>
         </form>
       </Modal>
 
-      {/* Modal: Recommend Study Notes */}
+      {/* Recommend Study Notes Modal */}
       <Modal
         isOpen={isAddRecOpen}
         onClose={() => setIsAddRecOpen(false)}
-        title={`Recommend Study Material for ${mentee.full_name}`}
-        description="Share learning resources, NPTEL modules, PDFs, or subject notes with this mentee."
+        title={`Recommend Study Material to ${mentee.full_name}`}
+        description="Share lecture notes, reference PDFs, or targeted learning materials."
       >
-        <form onSubmit={handleCreateRec} className="space-y-4 text-xs">
+        <form onSubmit={handleCreateRecommendation} className="space-y-4 text-xs">
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Recommendation Title *</label>
+            <label className="block font-semibold text-[#AAA2B8] uppercase tracking-wider mb-1">
+              Material Title *
+            </label>
             <input
               type="text"
               required
               value={recTitle}
               onChange={(e) => setRecTitle(e.target.value)}
-              placeholder="e.g. Dynamic Programming & Greedy Algorithms Masterclass"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-nmam-teal-500 focus:outline-none"
+              placeholder="e.g. Computer Networks Quick Revision Notes"
+              className="w-full px-3.5 py-2.5 bg-[#12101A] border border-[#30263E] rounded-xl text-sm text-[#F5F3FA] focus:outline-none focus:border-violet-500"
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-semibold text-[#AAA2B8] uppercase tracking-wider mb-1">
+                Subject *
+              </label>
+              <input
+                type="text"
+                required
+                value={recSubject}
+                onChange={(e) => setRecSubject(e.target.value)}
+                placeholder="e.g. Computer Networks"
+                className="w-full px-3.5 py-2.5 bg-[#12101A] border border-[#30263E] rounded-xl text-sm text-[#F5F3FA] focus:outline-none focus:border-violet-500"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-[#AAA2B8] uppercase tracking-wider mb-1">
+                Resource Type
+              </label>
+              <select
+                value={recType}
+                onChange={(e) => setRecType(e.target.value as any)}
+                className="w-full px-3.5 py-2.5 bg-[#12101A] border border-[#30263E] rounded-xl text-sm text-[#F5F3FA] focus:outline-none focus:border-violet-500"
+              >
+                <option value="url">External URL / Portal</option>
+                <option value="document">PDF Document</option>
+                <option value="note">Study Note</option>
+              </select>
+            </div>
+          </div>
+
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Course / Subject Code *</label>
+            <label className="block font-semibold text-[#AAA2B8] uppercase tracking-wider mb-1">
+              Resource URL (Optional)
+            </label>
             <input
-              type="text"
-              required
-              value={recSubject}
-              onChange={(e) => setRecSubject(e.target.value)}
-              placeholder="e.g. Algorithms (22CS501)"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-nmam-teal-500 focus:outline-none"
+              type="url"
+              value={recUrl}
+              onChange={(e) => setRecUrl(e.target.value)}
+              placeholder="https://example.com/notes.pdf"
+              className="w-full px-3.5 py-2.5 bg-[#12101A] border border-[#30263E] rounded-xl text-sm text-[#F5F3FA] focus:outline-none focus:border-violet-500"
             />
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Guidance & Directions *</label>
+            <label className="block font-semibold text-[#AAA2B8] uppercase tracking-wider mb-1">
+              Instructions &amp; Description *
+            </label>
             <textarea
               required
               rows={3}
               value={recDesc}
               onChange={(e) => setRecDesc(e.target.value)}
-              placeholder="Explain why this material will help and what sections to practice..."
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-nmam-teal-500 focus:outline-none"
+              placeholder="Read chapters 3 & 4 covering TCP/IP handshake before Friday..."
+              className="w-full px-3.5 py-2.5 bg-[#12101A] border border-[#30263E] rounded-xl text-sm text-[#F5F3FA] focus:outline-none focus:border-violet-500"
             />
           </div>
 
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Resource URL / External Link</label>
-            <input
-              type="url"
-              value={recUrl}
-              onChange={(e) => setRecUrl(e.target.value)}
-              placeholder="https://nptel.ac.in/... or college drive link"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-nmam-teal-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Target Follow-Up Date</label>
-            <input
-              type="date"
-              value={recFollowUp}
-              onChange={(e) => setRecFollowUp(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-nmam-teal-500 focus:outline-none"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-            <Button type="button" variant="outline" size="sm" onClick={() => setIsAddRecOpen(false)}>
+          <div className="pt-4 border-t border-[#30263E]/60 flex items-center justify-end gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsAddRecOpen(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit" variant="teal" size="sm">
-              Assign Recommendation
+            <Button type="submit" variant="primary">
+              Assign Material
             </Button>
           </div>
         </form>
